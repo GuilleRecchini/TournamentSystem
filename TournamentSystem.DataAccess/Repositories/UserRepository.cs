@@ -1,10 +1,11 @@
 ﻿using Dapper;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.DataAccess.Repositories
 {
-    public class UserRepository(IConfiguration configuration) : BaseRepository(configuration), IUserRepository
+    public class UserRepository(IOptions<ConnectionStrings> options) : BaseRepository(options), IUserRepository
     {
         public async Task<User> GetUserByIdAsync(int id)
         {

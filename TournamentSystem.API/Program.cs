@@ -1,5 +1,6 @@
 using TournamentSystem.Application.Services;
 using TournamentSystem.DataAccess.Repositories;
+using TournamentSystem.Infrastructure.Configurations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +11,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();

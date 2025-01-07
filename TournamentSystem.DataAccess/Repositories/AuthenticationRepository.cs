@@ -1,10 +1,11 @@
 ﻿using Dapper;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.DataAccess.Repositories
 {
-    public class AuthenticationRepository(IConfiguration configuration) : BaseRepository(configuration), IAuthenticationRepository
+    public class AuthenticationRepository(IOptions<ConnectionStrings> options) : BaseRepository(options), IAuthenticationRepository
     {
         public async Task<int> CreateUserAsync(User user)
         {

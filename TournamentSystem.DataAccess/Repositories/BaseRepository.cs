@@ -1,22 +1,22 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Options;
 using MySqlConnector;
 using System.Data;
+using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.DataAccess.Repositories
 {
     public abstract class BaseRepository
     {
-        protected readonly IConfiguration _configuration;
+        protected readonly string _connectionString;
 
-        protected BaseRepository(IConfiguration configuration)
+        protected BaseRepository(IOptions<ConnectionStrings> options)
         {
-            _configuration = configuration;
+            _connectionString = options.Value.DefaultConnection;
         }
 
         protected IDbConnection CreateConnection()
         {
-            var connectionString = _configuration.GetConnectionString("DefaultConnection");
-            return new MySqlConnection(connectionString);
+            return new MySqlConnection(_connectionString);
         }
     }
 }
