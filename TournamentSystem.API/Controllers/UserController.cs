@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Services;
 
 namespace TournamentSystem.API.Controllers
@@ -13,13 +12,6 @@ namespace TournamentSystem.API.Controllers
         public UserController(IUserService userService)
         {
             _userService = userService;
-        }
-
-        [HttpPost("register")]
-        public async Task<IActionResult> RegisterUser([FromBody] UserRegistrationDto dto)
-        {
-            var userId = await _userService.CreateUserAsync(dto);
-            return Ok(new { UserId = userId });
         }
 
         [HttpGet("{id}")]

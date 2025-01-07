@@ -10,4 +10,8 @@
     <Folder Include="Configurations\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
+  </ItemGroup>
+
 </Project>
