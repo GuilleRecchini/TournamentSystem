@@ -4,7 +4,7 @@ namespace TournamentSystem.DataAccess.Repositories
 {
     public interface IAuthenticationRepository
     {
-        Task<int> CreateUserAsync(User user);
-        Task<User> GetUserByEmail(string email);
+        Task AddRefreshTokenAsync(RefreshToken refreshToken);
+        Task<RefreshToken> GetRefreshTokenAsync(string token);
     }
 }

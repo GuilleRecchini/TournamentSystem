@@ -7,31 +7,30 @@ namespace TournamentSystem.DataAccess.Repositories
 {
     public class AuthenticationRepository(IOptions<ConnectionStrings> options) : BaseRepository(options), IAuthenticationRepository
     {
-        public async Task<int> CreateUserAsync(User user)
+        public async Task AddRefreshTokenAsync(RefreshToken refreshToken)
         {
             const string query = @"
-                INSERT INTO Users 
-                    (name, alias, email, password_hash, avatar_url, country_id, role, created_by) 
-                VALUES 
-                    (@Name, @Alias, @Email, @PasswordHash, @AvatarUrl, @CountryId, @Role, @CreatedBy); 
-                SELECT LAST_INSERT_ID();";
+            DELETE FROM RefreshTokens WHERE user_id = @UserId;
+            INSERT INTO RefreshTokens (user_id, token, expires, created_at) 
+            VALUES (@UserId, @Token, @Expires, @CreatedAt);";
 
-            var parameters = new { user.Name, user.Alias, user.Email, user.PasswordHash, user.AvatarUrl, user.CountryId, Role = user.Role.ToString().ToLower(), user.CreatedBy };
+            var parameters = new { refreshToken.UserId, refreshToken.Token, refreshToken.Expires, refreshToken.CreatedAt };
 
             using var connection = CreateConnection();
-            return await connection.QuerySingleAsync<int>(query, parameters);
+            await connection.ExecuteAsync(query, parameters);
         }
 
-        public async Task<User> GetUserByEmail(string email)
+        public async Task<RefreshToken> GetRefreshTokenAsync(string token)
         {
             const string query = @"
-                SELECT * FROM Users 
-                WHERE email = @Email;";
-
-            var parameters = new { email };
+            SELECT *
+            FROM RefreshTokens
+            WHERE token = @Token";
 
             using var connection = CreateConnection();
-            return await connection.QuerySingleOrDefaultAsync<User>(query, parameters);
+
+            return await connection.QuerySingleOrDefaultAsync<RefreshToken>(query, new { Token = token });
         }
+
     }
 }

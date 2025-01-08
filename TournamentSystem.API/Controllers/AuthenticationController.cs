@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Services;
+using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.API.Controllers
 {
@@ -8,20 +11,13 @@ namespace TournamentSystem.API.Controllers
     [Route("api/[controller]")]
     public class AuthenticationController : ControllerBase
     {
-
         private readonly IAuthenticationService _authenticationService;
+        private readonly IOptions<JwtOptions> _jwtOptions;
 
-        public AuthenticationController(IAuthenticationService authenticationService)
+        public AuthenticationController(IAuthenticationService authenticationService, IOptions<JwtOptions> jwtOptions)
         {
             _authenticationService = authenticationService;
-        }
-
-        [HttpPost("register")]
-        public async Task<IActionResult> RegisterUser([FromBody] UserRegistrationDto dto)
-        {
-            var userId = await _authenticationService.CreateUserAsync(dto);
-
-            return Ok(new { UserId = userId });
+            _jwtOptions = jwtOptions;
         }
 
         [HttpPost("login")]
@@ -31,6 +27,59 @@ namespace TournamentSystem.API.Controllers
 
             if (!authResult.Success)
                 return Unauthorized(new { authResult.Message });
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(_jwtOptions.Value.RefreshTokenExpirationDays)
+            };
+
+            Response.Cookies.Append("RefreshToken", authResult.RefreshToken, cookieOptions);
+
+            return Ok(new
+            {
+                authResult.Message,
+                authResult.UserId,
+                authResult.AccessToken,
+            });
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshTokensAsync()
+        {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var parsedUserId))
+                return Unauthorized("User ID not found or invalid.");
+
+            var refreshToken = Request.Cookies["RefreshToken"];
+
+            if (string.IsNullOrEmpty(refreshToken))
+                return Unauthorized("Refresh token is missing.");
+
+            var refreshTokenDto = new RefreshTokenDto()
+            {
+                UserId = parsedUserId,
+                RefreshToken = refreshToken
+            };
+
+            var authResult = await _authenticationService.RefreshTokensAsync(refreshTokenDto);
+
+            if (!authResult.Success)
+                return Unauthorized(new { authResult.Message });
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(_jwtOptions.Value.RefreshTokenExpirationDays)
+            };
+
+            Response.Cookies.Append("RefreshToken", authResult.RefreshToken, cookieOptions);
 
             return Ok(new
             {
