@@ -27,14 +27,17 @@ namespace TournamentSystem.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> LoginUser([FromBody] UserLoginDto dto)
         {
-            var userDto = await _authenticationService.LoginUserAsync(dto);
+            var authResult = await _authenticationService.LoginUserAsync(dto);
 
-            if (userDto == null)
+            if (!authResult.Success)
+                return Unauthorized(new { authResult.Message });
+
+            return Ok(new
             {
-                return Unauthorized();
-            }
-
-            return Ok(new { User = userDto });
+                authResult.Message,
+                authResult.UserId,
+                authResult.AccessToken,
+            });
         }
     }
 }

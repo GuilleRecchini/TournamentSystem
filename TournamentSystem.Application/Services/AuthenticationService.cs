@@ -8,10 +8,12 @@ namespace TournamentSystem.Application.Services
     public class AuthenticationService : IAuthenticationService
     {
         private readonly IAuthenticationRepository _authenticationRepository;
+        private readonly TokenProvider _tokenProvider;
 
-        public AuthenticationService(IAuthenticationRepository authenticationRepository)
+        public AuthenticationService(IAuthenticationRepository authenticationRepository, TokenProvider tokenProvider)
         {
             _authenticationRepository = authenticationRepository;
+            _tokenProvider = tokenProvider;
         }
 
         public async Task<int> CreateUserAsync(UserRegistrationDto dto)
@@ -31,27 +33,26 @@ namespace TournamentSystem.Application.Services
             return await _authenticationRepository.CreateUserAsync(user);
         }
 
-        public async Task<UserDto> LoginUserAsync(UserLoginDto dto)
+        public async Task<AuthenticationResult> LoginUserAsync(UserLoginDto dto)
         {
             var user = await _authenticationRepository.GetUserByEmail(dto.Email);
 
             if (user == null)
-                throw new UnauthorizedAccessException("El email o la contraseña son incorrectos. Por favor, inténtelo nuevamente.");
+                return new AuthenticationResult { Success = false, Message = "Invalid credentials." };
 
             var passwordMatch = PasswordHasher.VerifyPassword(dto.Password, user.PasswordHash);
 
             if (!passwordMatch)
-                throw new UnauthorizedAccessException("El email o la contraseña son incorrectos. Por favor, inténtelo nuevamente.");
+                return new AuthenticationResult { Success = false, Message = "Invalid credentials." };
 
-            return new UserDto
+            var accessToken = _tokenProvider.CreateJwt(user);
+
+            return new AuthenticationResult
             {
+                Success = true,
+                AccessToken = accessToken,
                 UserId = user.UserId,
-                Name = user.Name,
-                Alias = user.Alias,
-                Email = user.Email,
-                AvatarUrl = user.AvatarUrl,
-                CountryId = user.CountryId,
-                Role = user.Role,
+                Message = "Authentication successful."
             };
         }
     }
