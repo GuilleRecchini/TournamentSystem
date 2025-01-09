@@ -47,7 +47,7 @@ namespace TournamentSystem.Application.Services
 
             var existingToken = await _authenticationRepository.GetRefreshTokenAsync(dto.RefreshToken);
 
-            if (existingToken == null || existingToken.Expires < DateTime.UtcNow)
+            if (existingToken == null)
             {
                 return new AuthenticationResult { Success = false, Message = "Invalid or expired refresh token." };
             }

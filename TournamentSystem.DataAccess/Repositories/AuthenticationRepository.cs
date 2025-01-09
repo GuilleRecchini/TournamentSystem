@@ -25,12 +25,11 @@ namespace TournamentSystem.DataAccess.Repositories
             const string query = @"
             SELECT *
             FROM RefreshTokens
-            WHERE token = @Token";
+            WHERE token = @Token AND expires > NOW()";
 
             using var connection = CreateConnection();
 
             return await connection.QuerySingleOrDefaultAsync<RefreshToken>(query, new { Token = token });
         }
-
     }
 }
