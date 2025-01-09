@@ -31,5 +31,15 @@ namespace TournamentSystem.DataAccess.Repositories
 
             return await connection.QuerySingleOrDefaultAsync<RefreshToken>(query, new { Token = token });
         }
+
+        public async Task DeleteRefreshTokenAsync(string token)
+        {
+            const string query = @"
+            DELETE FROM RefreshTokens
+            WHERE token = @Token";
+
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync(query, new { Token = token });
+        }
     }
 }

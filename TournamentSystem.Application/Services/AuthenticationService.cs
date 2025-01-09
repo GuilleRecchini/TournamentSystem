@@ -73,6 +73,12 @@ namespace TournamentSystem.Application.Services
             };
         }
 
+
+        public async Task LogoutUserAsync(string refreshToken)
+        {
+            await _authenticationRepository.DeleteRefreshTokenAsync(refreshToken);
+        }
+
         private async Task<string> GenerateAndSaveRefreshTokenAsync(int userId)
         {
             var refreshToken = _tokenProvider.GenerateRefreshToken(userId);

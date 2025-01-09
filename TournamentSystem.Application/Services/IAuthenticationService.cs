@@ -7,5 +7,7 @@ namespace TournamentSystem.Application.Services
         Task<AuthenticationResult> LoginUserAsync(UserLoginDto dto);
 
         Task<AuthenticationResult> RefreshTokensAsync(RefreshTokenDto dto);
+
+        Task LogoutUserAsync(string refreshToken);
     }
 }

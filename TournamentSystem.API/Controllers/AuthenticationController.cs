@@ -21,7 +21,7 @@ namespace TournamentSystem.API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> LoginUser([FromBody] UserLoginDto dto)
+        public async Task<IActionResult> LoginUserAsync([FromBody] UserLoginDto dto)
         {
             var authResult = await _authenticationService.LoginUserAsync(dto);
 
@@ -87,6 +87,19 @@ namespace TournamentSystem.API.Controllers
                 authResult.UserId,
                 authResult.AccessToken,
             });
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> LogoutAsync()
+        {
+            var refreshToken = Request.Cookies["RefreshToken"];
+
+            if (!string.IsNullOrEmpty(refreshToken))
+                await _authenticationService.LogoutUserAsync(refreshToken);
+
+            Response.Cookies.Delete("RefreshToken");
+
+            return Ok(new { Message = "Logout successful." });
         }
     }
 }

@@ -6,5 +6,6 @@ namespace TournamentSystem.DataAccess.Repositories
     {
         Task AddRefreshTokenAsync(RefreshToken refreshToken);
         Task<RefreshToken> GetRefreshTokenAsync(string token);
+        Task DeleteRefreshTokenAsync(string token);
     }
 }
