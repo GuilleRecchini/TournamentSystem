@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using TournamentSystem.API.Middlewares;
 using TournamentSystem.Application.Services;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Infrastructure.Configurations;
@@ -45,6 +46,8 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
+builder.Services.AddTransient<GlobalExceptionHandler>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -54,6 +57,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<GlobalExceptionHandler>();
 app.UseAuthentication();
 app.UseAuthorization();
 
