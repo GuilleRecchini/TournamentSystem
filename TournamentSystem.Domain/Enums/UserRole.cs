@@ -2,7 +2,7 @@
 {
     public enum UserRole
     {
-        administrator,
+        Administrator,
         Organizer,
         Judge,
         Player

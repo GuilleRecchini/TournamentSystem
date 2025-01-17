@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Services;
+using TournamentSystem.Domain.Enums;
 
 namespace TournamentSystem.API.Controllers
 {
@@ -16,12 +18,102 @@ namespace TournamentSystem.API.Controllers
             _userService = userService;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> RegisterUser([FromBody] UserRegistrationDto dto)
+        [AllowAnonymous]
+        [HttpPost("register-player")]
+        public async Task<IActionResult> RegisterUserPlayer(PlayerRegistrationDto dto)
         {
-            var userId = await _userService.CreateUserAsync(dto);
+            var UserDto = new UserRegistrationDto
+            {
+                Name = dto.Name,
+                Alias = dto.Alias,
+                Email = dto.Email,
+                Password = dto.Password,
+                ConfirmPassword = dto.ConfirmPassword,
+                CountryId = dto.CountryId,
+                Role = UserRole.Player,
+            };
 
-            return Ok(new { UserId = userId });
+            return await CreateUserAsync(UserDto);
+        }
+
+        [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Organizer)}")]
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterUser(UserRegistrationDto dto)
+        {
+            var currentUserRol = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (currentUserRol == nameof(UserRole.Organizer) && dto.Role != UserRole.Judge)
+            {
+                var path = HttpContext.Request.Path;
+                return StatusCode(StatusCodes.Status403Forbidden, new ProblemDetails()
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "Forbidden",
+                    Detail = "Organizers can only register users with the 'Judge' role.",
+                    Instance = HttpContext.Request.Path
+                });
+            }
+
+            dto.CreatedBy = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            return await CreateUserAsync(dto);
+        }
+
+        private async Task<IActionResult> CreateUserAsync(UserRegistrationDto UserDto)
+        {
+            var userId = await _userService.CreateUserAsync(UserDto);
+
+            if (userId == -1)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "User Registration Error",
+                    Detail = "The email or alias is already in use."
+                });
+            }
+
+            return StatusCode(
+                StatusCodes.Status201Created,
+                new { Message = UserDto.Role.ToString() + " registered successfully." });
+        }
+
+        [Authorize(Roles = nameof(UserRole.Administrator))]
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateUser(UserUpdateDto dto)
+        {
+            var updated = await _userService.UpdateUserAsync(dto);
+
+            if (!updated)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "User Update Error",
+                    Detail = "The user does not exist."
+                });
+            }
+
+            return Ok(new { Message = "User successfully updated." });
+        }
+
+        [Authorize(Roles = nameof(UserRole.Administrator))]
+        [HttpDelete("delete/{userId}")]
+        public async Task<IActionResult> DeleteUser(int userId)
+        {
+            var deleted = await _userService.DeleteUserAsync(userId);
+
+            if (!deleted)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "User Delete Error",
+                    Detail = "The user does not exist."
+                });
+            }
+
+            return Ok(new { Message = "User successfully deleted." });
         }
 
         [Authorize]

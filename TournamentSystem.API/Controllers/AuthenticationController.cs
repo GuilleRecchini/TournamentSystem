@@ -26,7 +26,7 @@ namespace TournamentSystem.API.Controllers
             var authResult = await _authenticationService.LoginUserAsync(dto);
 
             if (!authResult.Success)
-                return Unauthorized(new { authResult.Message });
+                return UnauthorizedResponse(authResult.Message);
 
             var cookieOptions = new CookieOptions
             {
@@ -49,16 +49,15 @@ namespace TournamentSystem.API.Controllers
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshTokensAsync()
         {
-
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var parsedUserId))
-                return Unauthorized("User ID not found or invalid.");
+                return UnauthorizedResponse("User ID not found or invalid.");
 
             var refreshToken = Request.Cookies["RefreshToken"];
 
             if (string.IsNullOrEmpty(refreshToken))
-                return Unauthorized("Refresh token is missing.");
+                return UnauthorizedResponse("Refresh token is missing.");
 
             var refreshTokenDto = new RefreshTokenDto()
             {
@@ -69,7 +68,7 @@ namespace TournamentSystem.API.Controllers
             var authResult = await _authenticationService.RefreshTokensAsync(refreshTokenDto);
 
             if (!authResult.Success)
-                return Unauthorized(new { authResult.Message });
+                return UnauthorizedResponse(authResult.Message);
 
             var cookieOptions = new CookieOptions
             {
@@ -86,6 +85,16 @@ namespace TournamentSystem.API.Controllers
                 authResult.Message,
                 authResult.UserId,
                 authResult.AccessToken,
+            });
+        }
+
+        private UnauthorizedObjectResult UnauthorizedResponse(string message)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = message
             });
         }
 

@@ -19,7 +19,7 @@ namespace TournamentSystem.Application.Services
 
         public async Task<AuthenticationResult> LoginUserAsync(UserLoginDto dto)
         {
-            var user = await _userRepository.GetUserByEmail(dto.Email);
+            var user = await _userRepository.GetUserByEmailAsync(dto.Email);
 
             if (user == null)
                 return new AuthenticationResult { Success = false, Message = "Invalid credentials." };

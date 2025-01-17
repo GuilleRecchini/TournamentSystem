@@ -7,5 +7,7 @@ namespace TournamentSystem.Application.Services
     {
         Task<User> GetUserByIdAsync(int id);
         Task<int> CreateUserAsync(UserRegistrationDto dto);
+        Task<bool> UpdateUserAsync(UserUpdateDto dto);
+        Task<bool> DeleteUserAsync(int userId);
     }
 }

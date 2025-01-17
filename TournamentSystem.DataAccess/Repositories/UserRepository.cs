@@ -21,7 +21,46 @@ namespace TournamentSystem.DataAccess.Repositories
             using var connection = CreateConnection();
             return await connection.QuerySingleAsync<int>(query, parameters);
         }
-        public async Task<User> GetUserByIdAsync(int id)
+
+        public async Task<bool> UpdateUserAsync(User user)
+        {
+            const string query = @"
+                UPDATE Users 
+                SET 
+                    name = @Name,
+                    alias = @Alias,
+                    email = @Email,                    
+                    avatar_url = @AvatarUrl,
+                    country_id = @CountryId                    
+                WHERE user_id = @UserId;";
+
+            var parameters = new
+            {
+                user.Name,
+                user.Alias,
+                user.Email,
+                user.AvatarUrl,
+                user.CountryId,
+                user.UserId,
+            };
+
+            using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+        }
+
+        public async Task<bool> DeleteUserAsync(int userId)
+        {
+            const string query = @"
+                DELETE FROM Users
+                WHERE user_id = @UserId;";
+
+            var parameters = new { UserId = userId };
+
+            using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+        }
+
+        public async Task<User?> GetUserByIdAsync(int id)
         {
             const string query = "SELECT * FROM Users WHERE user_id = @Id";
 
@@ -31,7 +70,7 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.QueryFirstOrDefaultAsync<User>(query, parameters);
         }
 
-        public async Task<User> GetUserByEmail(string email)
+        public async Task<User?> GetUserByEmailAsync(string email)
         {
             const string query = @"
                 SELECT * FROM Users 
@@ -40,7 +79,22 @@ namespace TournamentSystem.DataAccess.Repositories
             var parameters = new { email };
 
             using var connection = CreateConnection();
-            return await connection.QuerySingleOrDefaultAsync<User>(query, parameters);
+            return await connection.QuerySingleOrDefaultAsync<User?>(query, parameters);
+        }
+
+        public async Task<bool> UserExistsByEmailOrAlias(string email, string alias)
+        {
+            const string query = @"
+                SELECT COUNT(1) 
+                FROM Users 
+                WHERE email = @Email OR alias = @Alias;";
+
+            var parameters = new { Email = email, Alias = alias };
+
+            using var connection = CreateConnection();
+            var userCount = await connection.QuerySingleAsync<int>(query, parameters);
+
+            return userCount > 0;
         }
     }
 }

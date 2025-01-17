@@ -26,7 +26,6 @@ namespace TournamentSystem.API.Middlewares
                 var problemDetails = new ProblemDetails()
                 {
                     Status = StatusCodes.Status500InternalServerError,
-                    Type = "Server error",
                     Title = "Server error",
                     Detail = "An internal server error has ocurred"
                 };
