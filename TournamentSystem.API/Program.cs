@@ -79,6 +79,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthenticationRepository, AuthenticationRepository>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
+builder.Services.AddScoped<ICardRepository, CardRepository>();
+builder.Services.AddScoped<ICardService, CardService>();
+
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 builder.Services.AddTransient<GlobalExceptionHandler>();
