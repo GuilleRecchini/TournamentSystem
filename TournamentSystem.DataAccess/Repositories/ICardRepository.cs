@@ -6,5 +6,6 @@ namespace TournamentSystem.DataAccess.Repositories
     {
         Task<Card?> GetCardByIdAsync(int id);
         Task<IEnumerable<Card>?> GetCardsBySerieAsync(int id);
+        Task<bool> DoAllCardsExistAsync(int[] cardIds);
     }
 }

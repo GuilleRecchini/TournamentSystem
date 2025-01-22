@@ -18,24 +18,6 @@ namespace TournamentSystem.API.Controllers
             _userService = userService;
         }
 
-        [AllowAnonymous]
-        [HttpPost("register-player")]
-        public async Task<IActionResult> RegisterUserPlayer(PlayerRegistrationDto dto)
-        {
-            var UserDto = new UserRegistrationDto
-            {
-                Name = dto.Name,
-                Alias = dto.Alias,
-                Email = dto.Email,
-                Password = dto.Password,
-                ConfirmPassword = dto.ConfirmPassword,
-                CountryId = dto.CountryId,
-                Role = UserRole.Player,
-            };
-
-            return await CreateUserAsync(UserDto);
-        }
-
         [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Organizer)}")]
         [HttpPost("register")]
         public async Task<IActionResult> RegisterUser(UserRegistrationDto dto)
@@ -56,12 +38,7 @@ namespace TournamentSystem.API.Controllers
 
             dto.CreatedBy = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            return await CreateUserAsync(dto);
-        }
-
-        private async Task<IActionResult> CreateUserAsync(UserRegistrationDto UserDto)
-        {
-            var userId = await _userService.CreateUserAsync(UserDto);
+            var userId = await _userService.CreateUserAsync(dto);
 
             if (userId == -1)
             {
@@ -75,8 +52,9 @@ namespace TournamentSystem.API.Controllers
 
             return StatusCode(
                 StatusCodes.Status201Created,
-                new { Message = UserDto.Role.ToString() + " registered successfully." });
+                new { Message = dto.Role.ToString() + " registered successfully." });
         }
+
 
         [Authorize(Roles = nameof(UserRole.Administrator))]
         [HttpPut("update")]

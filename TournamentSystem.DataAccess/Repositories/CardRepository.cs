@@ -17,6 +17,19 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.QueryFirstOrDefaultAsync<Card>(query, parameters);
         }
 
+        public async Task<bool> DoAllCardsExistAsync(int[] cardIds)
+        {
+            const string query = @"
+                SELECT COUNT(*) 
+                FROM cards
+                WHERE card_id IN @CardIds";
+
+            using var connection = CreateConnection();
+            var count = await connection.ExecuteScalarAsync<int>(query, new { CardIds = cardIds });
+            return count == cardIds.Length;
+        }
+
+
         public async Task<IEnumerable<Card>?> GetCardsBySerieAsync(int id)
         {
             const string query = @"
