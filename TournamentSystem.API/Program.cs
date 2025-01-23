@@ -85,6 +85,9 @@ builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 
+builder.Services.AddScoped<ITournamentRepository, TournamentRepository>();
+builder.Services.AddScoped<ITournamentService, TournamentService>();
+
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 builder.Services.AddTransient<GlobalExceptionHandler>();
