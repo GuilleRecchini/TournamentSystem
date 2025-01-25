@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TournamentSystem.Application.Dtos;
+using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
 using TournamentSystem.Domain.Enums;
 
@@ -22,7 +22,7 @@ namespace TournamentSystem.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> RegisterUser(UserRegistrationDto dto)
         {
-            var currentUserRol = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var currentUserRol = ClaimsHelper.GetUserRole(User);
 
             if (currentUserRol == nameof(UserRole.Organizer) && dto.Role != UserRole.Judge)
             {
@@ -36,23 +36,13 @@ namespace TournamentSystem.API.Controllers
                 });
             }
 
-            dto.CreatedBy = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            dto.CreatedBy = ClaimsHelper.GetUserId(User);
 
             var userId = await _userService.CreateUserAsync(dto);
 
-            if (userId == -1)
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "User Registration Error",
-                    Detail = "The email or alias is already in use."
-                });
-            }
-
             return StatusCode(
                 StatusCodes.Status201Created,
-                new { Message = dto.Role.ToString() + " registered successfully." });
+                new { Message = dto.Role.ToString() + "  registered successfully.", UserId = userId });
         }
 
 
@@ -62,16 +52,6 @@ namespace TournamentSystem.API.Controllers
         {
             var updated = await _userService.UpdateUserAsync(dto);
 
-            if (!updated)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "User Update Error",
-                    Detail = "The user does not exist."
-                });
-            }
-
             return Ok(new { Message = "User successfully updated." });
         }
 
@@ -80,16 +60,6 @@ namespace TournamentSystem.API.Controllers
         public async Task<IActionResult> DeleteUser(int userId)
         {
             var deleted = await _userService.DeleteUserAsync(userId);
-
-            if (!deleted)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "User Delete Error",
-                    Detail = "The user does not exist."
-                });
-            }
 
             return Ok(new { Message = "User successfully deleted." });
         }

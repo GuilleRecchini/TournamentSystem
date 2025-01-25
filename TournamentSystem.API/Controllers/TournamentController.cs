@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TournamentSystem.Application.Dtos;
+using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
 using TournamentSystem.Domain.Enums;
 
@@ -20,24 +20,20 @@ namespace TournamentSystem.API.Controllers
 
         [Authorize(Roles = nameof(UserRole.Organizer))]
         [HttpPost("create")]
-        public async Task<IActionResult> CreateTournamentAsync(TournamentCreateDto dto)
+        public async Task<IActionResult> CreateTournamentAsync(TournamentCreateDto tournamentCreate)
         {
+            var OrganizerId = ClaimsHelper.GetUserId(User);
 
-            var OrganizerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(OrganizerIdString))
-            {
-                return Unauthorized("Organizer ID is missing or invalid.");
-            }
+            var tournamentId = await _tournamentService.CreateTournamentAsync(tournamentCreate, OrganizerId);
 
-            var tournamentId = await _tournamentService.CreateTournamentAsync(dto, int.Parse(OrganizerIdString));
             return StatusCode(StatusCodes.Status201Created, new { TournamentId = tournamentId });
         }
 
         [Authorize(Roles = nameof(UserRole.Organizer))]
         [HttpPut("update")]
-        public async Task<IActionResult> UpdateTournamentAsync(TournamentUpdateDto dto)
+        public async Task<IActionResult> UpdateTournamentAsync(TournamentUpdateDto TournamentUpdate)
         {
-            var success = await _tournamentService.UpdateTournamentAsync(dto);
+            var success = await _tournamentService.UpdateTournamentAsync(TournamentUpdate);
 
             if (!success)
             {
@@ -49,7 +45,7 @@ namespace TournamentSystem.API.Controllers
                 });
             }
 
-            return Ok(new { Message = "Tournament successfully deleted." });
+            return Ok(new { Message = "Tournament successfully updated." });
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Exceptions;
 
 namespace TournamentSystem.Application.Services
 {
@@ -16,17 +17,24 @@ namespace TournamentSystem.Application.Services
             _cardRepository = cardRepository;
         }
 
-        public async Task<bool> AddCardsToCollectionAsync(int[] cardsIds, int playerId)
+        public async Task<int> AddCardsToCollectionAsync(int[] cardsIds, int playerId)
         {
             var player = await _userRepository.GetUserByIdAsync(playerId);
+
             if (player is null)
-                return false;
+                throw new NotFoundException("Player not found");
 
             var allCardsExist = await _cardRepository.DoAllCardsExistAsync(cardsIds);
-            if (!allCardsExist)
-                return false;
 
-            return await _playerRepository.AddCardsToCollectionAsync(cardsIds, playerId);
+            if (!allCardsExist)
+                throw new NotFoundException("Some cards do not exist");
+
+            var addedCount = await _playerRepository.AddCardsToCollectionAsync(cardsIds, playerId);
+
+            if (addedCount > 0)
+                throw new Exception("All cards were already in your collection.");
+
+            return addedCount;
         }
 
         public async Task<IEnumerable<Card>> GetCardsByPlayerIdAsyncAsync(int playerId)

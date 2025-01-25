@@ -1,6 +1,7 @@
 ﻿using TournamentSystem.Application.Dtos;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Exceptions;
 
 namespace TournamentSystem.Application.Services
 {
@@ -32,8 +33,8 @@ namespace TournamentSystem.Application.Services
         {
             var existingTournament = await _tournamentRepository.GetTournamentByIdAsync(dto.TournamentId);
 
-            if (existingTournament == null)
-                return false;
+            if (existingTournament is null)
+                throw new NotFoundException("Tournament not found");
 
             existingTournament.Name = dto.Name ?? existingTournament.Name;
             existingTournament.StartDateTime = dto.StartDateTime ?? existingTournament.StartDateTime;

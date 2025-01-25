@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TournamentSystem.Application.Dtos;
+using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
 using TournamentSystem.Domain.Enums;
 
@@ -37,19 +37,9 @@ namespace TournamentSystem.API.Controllers
 
             var userId = await _userService.CreateUserAsync(UserDto);
 
-            if (userId == -1)
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "User Registration Error",
-                    Detail = "The email or alias is already in use."
-                });
-            }
-
             return StatusCode(
                 StatusCodes.Status201Created,
-                new { Message = UserDto.Role.ToString() + " registered successfully." });
+                new { Message = UserRole.Player + " registered successfully.", UserId = userId });
         }
 
         [HttpPost("add-cards")]
@@ -58,32 +48,17 @@ namespace TournamentSystem.API.Controllers
             if (cardsIds is null || cardsIds.Length == 0)
                 return BadRequest("The list of cards cannot be empty.");
 
-            var playerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(playerIdString))
-            {
-                return Unauthorized("Player ID is missing or invalid.");
-            }
+            var playerId = ClaimsHelper.GetUserId(User);
 
-            var playerId = int.Parse(playerIdString);
+            var addedCount = await _playerService.AddCardsToCollectionAsync(cardsIds, playerId);
 
-            var result = await _playerService.AddCardsToCollectionAsync(cardsIds, playerId);
-
-            if (!result)
-                return BadRequest();
-
-            return Ok();
+            return Ok(new { Message = addedCount + " card(s) successfully added." });
         }
 
         [HttpGet("cards")]
         public async Task<IActionResult> GetCardsByPlayerIdAsyncAsync()
         {
-            var playerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(playerIdString))
-            {
-                return Unauthorized("Player ID is missing or invalid.");
-            }
-
-            var playerId = int.Parse(playerIdString);
+            var playerId = ClaimsHelper.GetUserId(User);
 
             var cards = await _playerService.GetCardsByPlayerIdAsyncAsync(playerId);
 

@@ -1,6 +1,7 @@
 ﻿using TournamentSystem.Application.Dtos;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Exceptions;
 using TournamentSystem.Infrastructure.Security;
 
 namespace TournamentSystem.Application.Services
@@ -19,7 +20,7 @@ namespace TournamentSystem.Application.Services
             var userExist = await _userRepository.UserExistsByEmailOrAlias(dto.Email, dto.Alias);
 
             if (userExist)
-                return -1;
+                throw new ValidationException("The email or alias is already in use.");
 
             var hashedPassword = PasswordHasher.HashPassword(dto.Password);
 
@@ -42,8 +43,8 @@ namespace TournamentSystem.Application.Services
         {
             var user = await _userRepository.GetUserByIdAsync(dto.UserId);
 
-            if (user == null)
-                return false;
+            if (user is null)
+                throw new NotFoundException("The user does not exist.");
 
             if (dto.Name != null) user.Name = dto.Name;
             if (dto.Alias != null) user.Alias = dto.Alias;
@@ -58,8 +59,8 @@ namespace TournamentSystem.Application.Services
         {
             var user = await _userRepository.GetUserByIdAsync(userId);
 
-            if (user == null)
-                return false;
+            if (user is null)
+                throw new NotFoundException("The user does not exist.");
 
             return await _userRepository.DeleteUserAsync(userId);
         }

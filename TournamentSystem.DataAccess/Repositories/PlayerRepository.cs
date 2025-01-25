@@ -7,7 +7,7 @@ namespace TournamentSystem.DataAccess.Repositories
 {
     public class PlayerRepository(IOptions<ConnectionStrings> options) : BaseRepository(options), IPlayerRepository
     {
-        public async Task<bool> AddCardsToCollectionAsync(int[] cardIds, int playerId)
+        public async Task<int> AddCardsToCollectionAsync(int[] cardIds, int playerId)
         {
             const string query = @"
                 INSERT IGNORE INTO player_cards 
@@ -20,7 +20,7 @@ namespace TournamentSystem.DataAccess.Repositories
             var parameters = new { PlayerId = playerId, CardIds = cardIds };
 
             using var connection = CreateConnection();
-            return await connection.ExecuteAsync(query, parameters) > 0;
+            return await connection.ExecuteAsync(query, parameters);
         }
 
         public async Task<IEnumerable<Card>> GetCardsByPlayerIdAsync(int playerId)
