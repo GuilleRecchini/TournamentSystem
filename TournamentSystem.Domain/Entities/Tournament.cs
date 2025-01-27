@@ -12,5 +12,9 @@ namespace TournamentSystem.Domain.Entities
         public TournamentPhase Phase { get; set; }
         public int? Winner { get; set; }
         public int? OrganizerId { get; set; }
+
+
+        //Navigation properties
+        public List<Serie> Series { get; set; }
     }
 }

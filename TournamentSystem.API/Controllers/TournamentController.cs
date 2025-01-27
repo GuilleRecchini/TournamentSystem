@@ -47,5 +47,13 @@ namespace TournamentSystem.API.Controllers
 
             return Ok(new { Message = "Tournament successfully updated." });
         }
+
+        [Authorize(Roles = nameof(UserRole.Organizer))]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetTournamentByIdAsync(int id)
+        {
+            var tournament = await _tournamentService.GetTournamentByIdAsync(id);
+            return Ok(tournament);
+        }
     }
 }

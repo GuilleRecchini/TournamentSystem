@@ -7,5 +7,6 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<int> CreateTournamentAsync(Tournament t);
         Task<bool> UpdateTournamentAsync(Tournament t);
         Task<Tournament?> GetTournamentByIdAsync(int id);
+        Task<int> AddSeriesToTournamentAsync(int tournamentId, int[] seriesId);
     }
 }

@@ -88,6 +88,8 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<ITournamentRepository, TournamentRepository>();
 builder.Services.AddScoped<ITournamentService, TournamentService>();
 
+builder.Services.AddScoped<ISerieRepository, SerieRepository>();
+
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 builder.Services.AddTransient<GlobalExceptionHandler>();

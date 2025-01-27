@@ -15,5 +15,6 @@ namespace TournamentSystem.Application.Dtos
         public DateTime EndDateTime { get; set; }
 
         public int? CountryId { get; set; }
+        public List<int> SeriesIds { get; set; }
     }
 }
