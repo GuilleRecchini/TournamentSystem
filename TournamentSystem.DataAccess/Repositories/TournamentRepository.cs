@@ -25,37 +25,51 @@ namespace TournamentSystem.DataAccess.Repositories
         public async Task<Tournament?> GetTournamentByIdAsync(int id)
         {
             const string query = @"
-                    SELECT t.*, s.* FROM Tournaments t
+                    SELECT t.*, s.*, p.*, ju.*, o.* FROM Tournaments t
                     LEFT JOIN tournament_series AS ts ON t.tournament_id = ts.tournament_id
                     LEFT JOIN series AS s ON ts.series_id = s.series_id
+                    LEFT JOIN tournament_players AS tp ON t.tournament_id = tp.tournament_id
+                    LEFT JOIN users AS p ON tp.user_id = p.user_id
+                    LEFT JOIN tournament_judges AS tj ON t.tournament_id = tj.tournament_id
+                    LEFT JOIN users AS ju ON tj.user_id = ju.user_id
+                    LEFT JOIN users AS o ON t.organizer_id = o.user_id
                     WHERE t.tournament_id = @TournamentId;";
 
             var parameters = new { TournamentId = id };
 
             using var connection = CreateConnection();
 
-            Tournament? tournament = null;
+            var tournamentDictionary = new Dictionary<int, Tournament>();
 
-            await connection.QueryAsync<Tournament, Serie, Tournament>(
+            var tournament = await connection.QueryAsync<Tournament, Serie, User, User, User, Tournament>(
                 query,
-                (t, s) =>
+                (t, serie, player, judge, organizer) =>
                 {
-                    if (tournament is null)
+                    if (!tournamentDictionary.TryGetValue(t.TournamentId, out var tournamentEntry))
                     {
-                        tournament = t;
-                        tournament.Series = new List<Serie>();
+                        tournamentEntry = t;
+                        tournamentEntry.Series = [];
+                        tournamentEntry.Players = [];
+                        tournamentEntry.Judges = [];
+                        tournamentEntry.Organizer = organizer;
+                        tournamentDictionary.Add(tournamentEntry.TournamentId, tournamentEntry);
                     }
 
-                    if (s is not null)
-                    {
-                        tournament.Series.Add(s);
-                    }
-                    return t;
+                    if (serie is not null && !tournamentEntry.Series.Any(s => s.SeriesId == serie.SeriesId))
+                        tournamentEntry.Series.Add(serie);
+
+                    if (player is not null && !tournamentEntry.Players.Any(p => p.UserId == player.UserId))
+                        tournamentEntry.Players.Add(player);
+
+                    if (judge is not null && !tournamentEntry.Judges.Any(j => j.UserId == judge.UserId))
+                        tournamentEntry.Judges.Add(judge);
+
+                    return tournamentEntry;
                 },
                 parameters,
-                splitOn: "series_id");
+                splitOn: "series_id, user_id,user_id,user_id");
 
-            return tournament;
+            return tournamentDictionary.Values.FirstOrDefault();
         }
 
         public async Task<bool> UpdateTournamentAsync(Tournament t)
@@ -100,6 +114,47 @@ namespace TournamentSystem.DataAccess.Repositories
 
             using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters);
+        }
+
+        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId)
+        {
+            const string query = @"
+                INSERT INTO tournament_players 
+                    (tournament_id, user_id)
+                VALUES 
+                    (@TournamentId, @PlayerId);";
+
+            var parameters = new { tournamentId, playerId };
+
+            using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+        }
+
+        public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId)
+        {
+            const string query = @"
+                INSERT INTO tournament_judges 
+                    (tournament_id, user_id)
+                VALUES 
+                    (@TournamentId, @JudgeId);";
+
+            var parameters = new { tournamentId, judgeId };
+
+            using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+        }
+
+        public async Task<int> GetPlayerCountAsync(int tournamentId)
+        {
+            const string query = @"
+            SELECT COUNT(*)
+            FROM tournament_players
+            WHERE tournament_id = @TournamentId;";
+
+            var parameters = new { TournamentId = tournamentId };
+
+            using var connection = CreateConnection();
+            return await connection.ExecuteScalarAsync<int>(query, parameters);
         }
     }
 }

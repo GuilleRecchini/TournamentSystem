@@ -48,12 +48,49 @@ namespace TournamentSystem.API.Controllers
             return Ok(new { Message = "Tournament successfully updated." });
         }
 
-        [Authorize(Roles = nameof(UserRole.Organizer))]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetTournamentByIdAsync(int id)
+        [Authorize]
+        [HttpGet("{tournamentId}")]
+        public async Task<IActionResult> GetTournamentByIdAsync(int tournamentId)
         {
-            var tournament = await _tournamentService.GetTournamentByIdAsync(id);
+            var userRole = ClaimsHelper.GetUserRole(User);
+
+            var tournament = await _tournamentService.GetTournamentByIdAsync(tournamentId, userRole);
+
             return Ok(tournament);
         }
+
+        [Authorize(Roles = nameof(UserRole.Player))]
+        [HttpPost("{tournamentId}/register")]
+        public async Task<IActionResult> RegisterPlayerAsync(int tournamentId)
+        {
+            var playerId = ClaimsHelper.GetUserId(User);
+
+            var success = await _tournamentService.RegisterPlayerAsync(tournamentId, playerId);
+
+            if (!success)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Registration Error",
+                    Detail = "The player could not be registered for the tournament."
+                });
+            }
+
+            return Ok(new { Message = "Player successfully registered for the tournament." });
+        }
+
+
+        [Authorize(Roles = nameof(UserRole.Organizer))]
+        [HttpPost("{tournamentId}/assign-judge/{judgeId}")]
+        public async Task<IActionResult> AssignJudgeToTournamentAsync(int tournamentId, int judgeId)
+        {
+            var organizerId = ClaimsHelper.GetUserId(User);
+
+            var success = await _tournamentService.AssignJudgeToTournamentAsync(tournamentId, judgeId, organizerId);
+
+            return Ok(new { Message = "Judge successfully assigned to the tournament." });
+        }
+
     }
 }

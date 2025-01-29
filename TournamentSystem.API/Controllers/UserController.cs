@@ -24,7 +24,7 @@ namespace TournamentSystem.API.Controllers
         {
             var currentUserRol = ClaimsHelper.GetUserRole(User);
 
-            if (currentUserRol == nameof(UserRole.Organizer) && dto.Role != UserRole.Judge)
+            if (currentUserRol == UserRole.Organizer && dto.Role != UserRole.Judge)
             {
                 var path = HttpContext.Request.Path;
                 return StatusCode(StatusCodes.Status403Forbidden, new ProblemDetails()

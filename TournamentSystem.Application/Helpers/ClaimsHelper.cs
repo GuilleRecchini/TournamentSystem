@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using TournamentSystem.Domain.Enums;
 using TournamentSystem.Domain.Exceptions;
 
 namespace TournamentSystem.Application.Helpers
@@ -32,9 +33,10 @@ namespace TournamentSystem.Application.Helpers
             return GetClaimValue(user, ClaimTypes.Name);
         }
 
-        public static string GetUserRole(ClaimsPrincipal user)
+        public static UserRole GetUserRole(ClaimsPrincipal user)
         {
-            return GetClaimValue(user, ClaimTypes.Role);
+            var userRoleString = GetClaimValue(user, ClaimTypes.Role);
+            return (UserRole)Enum.Parse(typeof(UserRole), userRoleString);
         }
     }
 }

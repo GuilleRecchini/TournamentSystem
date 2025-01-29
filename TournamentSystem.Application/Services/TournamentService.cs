@@ -1,6 +1,7 @@
 ﻿using TournamentSystem.Application.Dtos;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Enums;
 using TournamentSystem.Domain.Exceptions;
 
 namespace TournamentSystem.Application.Services
@@ -9,13 +10,14 @@ namespace TournamentSystem.Application.Services
     {
         private readonly ITournamentRepository _tournamentRepository;
         private readonly ISerieRepository _serieRepository;
+        private readonly IUserRepository _userRepository;
 
-        public TournamentService(ITournamentRepository tournamentRepository, ISerieRepository serieRepository)
+        public TournamentService(ITournamentRepository tournamentRepository, ISerieRepository serieRepository, IUserRepository userRepository)
         {
             _tournamentRepository = tournamentRepository;
             _serieRepository = serieRepository;
+            _userRepository = userRepository;
         }
-
 
         public async Task<int> CreateTournamentAsync(TournamentCreateDto dto, int oganizerId)
         {
@@ -56,14 +58,150 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.UpdateTournamentAsync(existingTournament);
         }
 
-        public async Task<Tournament> GetTournamentByIdAsync(int tournamentId)
+        public async Task<BaseTournamentDto> GetTournamentByIdAsync(int tournamentId, UserRole userRole)
         {
             var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
 
-            return tournament;
+            if (userRole == UserRole.Administrator || userRole == UserRole.Organizer)
+            {
+                return new TournamentAdminDto
+                {
+                    TournamentId = tournament.TournamentId,
+                    Name = tournament.Name,
+                    StartDateTime = tournament.StartDateTime,
+                    EndDateTime = tournament.EndDateTime,
+                    CountryId = tournament.CountryId,
+                    Winner = tournament.Winner,
+                    Series = tournament.Series,
+                    Players = tournament.Players.ConvertAll(p => new UserForAdminsDto
+                    {
+                        UserId = p.UserId,
+                        Name = p.Name,
+                        Alias = p.Alias,
+                        Email = p.Email,
+                        AvatarUrl = p.AvatarUrl,
+                        CountryId = p.CountryId,
+                        Role = p.Role
+                    }),
+                    Judges = tournament.Judges.ConvertAll(j => new UserForAdminsDto
+                    {
+                        UserId = j.UserId,
+                        Name = j.Name,
+                        Alias = j.Alias,
+                        Email = j.Email,
+                        AvatarUrl = j.AvatarUrl,
+                        CountryId = j.CountryId,
+                        Role = j.Role
+                    }),
+                    Organizer = new UserForAdminsDto
+                    {
+                        UserId = tournament.Organizer.UserId,
+                        Name = tournament.Organizer.Name,
+                        Alias = tournament.Organizer.Alias,
+                        Email = tournament.Organizer.Email,
+                        AvatarUrl = tournament.Organizer.AvatarUrl,
+                        CountryId = tournament.Organizer.CountryId,
+                        Role = tournament.Organizer.Role
+                    }
+                };
+            }
+
+            return new TournamentPublicDto
+            {
+                TournamentId = tournament.TournamentId,
+                Name = tournament.Name,
+                StartDateTime = tournament.StartDateTime,
+                EndDateTime = tournament.EndDateTime,
+                CountryId = tournament.CountryId,
+                Winner = tournament.Winner,
+                Series = tournament.Series,
+                Players = tournament.Players.ConvertAll(p => new BaseUserDto
+                {
+                    Alias = p.Alias,
+                    AvatarUrl = p.AvatarUrl,
+                    CountryId = p.CountryId
+                }),
+                Judges = tournament.Judges.ConvertAll(j => new BaseUserDto
+                {
+                    Alias = j.Alias,
+                    AvatarUrl = j.AvatarUrl,
+                    CountryId = j.CountryId,
+                }),
+                Organizer = new BaseUserDto
+                {
+                    Alias = tournament.Organizer.Alias,
+                    AvatarUrl = tournament.Organizer.AvatarUrl,
+                    CountryId = tournament.Organizer.CountryId,
+                }
+            };
+        }
+
+        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament is null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.Phase != Domain.Enums.TournamentPhase.Registration)
+                throw new ValidationException("The tournament is not in the registration phase.");
+
+            if (tournament.Players.Exists(p => p.UserId == playerId))
+                throw new ValidationException("The player is already registered for the tournament.");
+
+            var maxPlayers = CalculateMaxPlayers(tournament);
+            //var currentPlayers = await _tournamentRepository.GetPlayerCountAsync(tournamentId);
+            var currentPlayers = tournament.Players.Count;
+
+            if (currentPlayers >= maxPlayers)
+                throw new ValidationException("The tournament has reached its maximum capacity of players.");
+
+            return await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId);
+        }
+
+        public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament is null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.OrganizerId != organizerId)
+                throw new ValidationException("The organizer is not allowed to assign judges to this tournament.");
+
+            var judge = await _userRepository.GetUserByIdAsync(judgeId);
+
+            if (judge is null || judge.Role != Domain.Enums.UserRole.Judge)
+                throw new NotFoundException("Judge not found");
+
+            if (tournament.Judges.Exists(j => j.UserId == judgeId))
+                throw new ValidationException("The judge is already assigned to the tournament.");
+
+            return await _tournamentRepository.AssignJudgeToTournamentAsync(tournamentId, judgeId);
+        }
+
+        private int CalculateMaxPlayers(Tournament tournament)
+        {
+            const int gameDurationInMinutes = 30;
+
+            var startHour = tournament.StartDateTime.TimeOfDay;
+            var endHour = tournament.EndDateTime.TimeOfDay;
+            var totalDays = tournament.EndDateTime.Day - tournament.StartDateTime.Day + 1;
+            var tournamentTotalMinutes = (endHour - startHour).TotalMinutes * totalDays;
+            var maxGames = tournamentTotalMinutes / gameDurationInMinutes;
+            var possiblePlayers = maxGames + 1;
+
+            var maxPlayers = 1;
+
+            while ((maxPlayers * 2) + 1 <= possiblePlayers)
+            {
+                maxPlayers *= 2;
+            }
+
+            return maxPlayers + 1;
         }
     }
 }

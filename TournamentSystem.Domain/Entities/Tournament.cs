@@ -13,8 +13,10 @@ namespace TournamentSystem.Domain.Entities
         public int? Winner { get; set; }
         public int? OrganizerId { get; set; }
 
-
         //Navigation properties
         public List<Serie> Series { get; set; }
+        public List<User> Players { get; set; }
+        public List<User> Judges { get; set; }
+        public User Organizer { get; set; }
     }
 }
