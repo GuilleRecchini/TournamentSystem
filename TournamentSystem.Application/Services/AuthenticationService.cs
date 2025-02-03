@@ -1,5 +1,6 @@
 ﻿using TournamentSystem.Application.Dtos;
 using TournamentSystem.DataAccess.Repositories;
+using TournamentSystem.Domain.Exceptions;
 using TournamentSystem.Infrastructure.Security;
 
 namespace TournamentSystem.Application.Services
@@ -22,42 +23,35 @@ namespace TournamentSystem.Application.Services
             var user = await _userRepository.GetUserByEmailAsync(dto.Email);
 
             if (user == null)
-                return new AuthenticationResult { Success = false, Message = "Invalid credentials." };
+                throw new UnauthorizedException("Invalid credentials.");
 
             var passwordMatch = PasswordHasher.VerifyPassword(dto.Password, user.PasswordHash);
 
             if (!passwordMatch)
-                return new AuthenticationResult { Success = false, Message = "Invalid credentials." };
+                throw new UnauthorizedException("Invalid credentials.");
 
             var accessToken = _tokenProvider.CreateJwt(user);
             var refreshToken = await GenerateAndSaveRefreshTokenAsync(user.UserId);
 
             return new AuthenticationResult
             {
-                Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                UserId = user.UserId,
-                Message = "Authentication successful."
+                UserId = user.UserId
             };
         }
 
         public async Task<AuthenticationResult> RefreshTokensAsync(RefreshTokenDto dto)
         {
-
             var existingToken = await _authenticationRepository.GetRefreshTokenAsync(dto.RefreshToken);
 
-            if (existingToken == null)
-            {
-                return new AuthenticationResult { Success = false, Message = "Invalid or expired refresh token." };
-            }
+            if (existingToken is null)
+                throw new UnauthorizedException("Invalid or expired refresh token.");
 
             var user = await _userRepository.GetUserByIdAsync(existingToken.UserId);
 
             if (user == null || user.UserId != dto.UserId)
-            {
-                return new AuthenticationResult { Success = false, Message = "User not found." };
-            }
+                throw new UnauthorizedException("Invalid user.");
 
             var accessToken = _tokenProvider.CreateJwt(user);
 
@@ -65,14 +59,11 @@ namespace TournamentSystem.Application.Services
 
             return new AuthenticationResult
             {
-                Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                UserId = user.UserId,
-                Message = "Tokens refreshed successfully."
+                UserId = user.UserId
             };
         }
-
 
         public async Task LogoutUserAsync(string refreshToken)
         {

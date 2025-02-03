@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TournamentSystem.Domain.Exceptions; // Asegúrate de importar las excepciones personalizadas.
+using TournamentSystem.Domain.Exceptions;
 
 namespace TournamentSystem.API.Middlewares
 {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
 using TournamentSystem.Application.Dtos;
+using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
 using TournamentSystem.Infrastructure.Configurations;
 
@@ -25,9 +25,6 @@ namespace TournamentSystem.API.Controllers
         {
             var authResult = await _authenticationService.LoginUserAsync(dto);
 
-            if (!authResult.Success)
-                return UnauthorizedResponse(authResult.Message);
-
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
@@ -40,7 +37,7 @@ namespace TournamentSystem.API.Controllers
 
             return Ok(new
             {
-                authResult.Message,
+                Message = "Authentication successful.",
                 authResult.UserId,
                 authResult.AccessToken,
             });
@@ -49,26 +46,27 @@ namespace TournamentSystem.API.Controllers
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshTokensAsync()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var parsedUserId))
-                return UnauthorizedResponse("User ID not found or invalid.");
+            var userId = ClaimsHelper.GetUserId(User);
 
             var refreshToken = Request.Cookies["RefreshToken"];
 
             if (string.IsNullOrEmpty(refreshToken))
-                return UnauthorizedResponse("Refresh token is missing.");
+            {
+                return Unauthorized(new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Unauthorized",
+                    Detail = "Refresh token is missing."
+                });
+            }
 
             var refreshTokenDto = new RefreshTokenDto()
             {
-                UserId = parsedUserId,
+                UserId = userId,
                 RefreshToken = refreshToken
             };
 
             var authResult = await _authenticationService.RefreshTokensAsync(refreshTokenDto);
-
-            if (!authResult.Success)
-                return UnauthorizedResponse(authResult.Message);
 
             var cookieOptions = new CookieOptions
             {
@@ -82,19 +80,9 @@ namespace TournamentSystem.API.Controllers
 
             return Ok(new
             {
-                authResult.Message,
+                Message = "Tokens refreshed successfully.",
                 authResult.UserId,
                 authResult.AccessToken,
-            });
-        }
-
-        private UnauthorizedObjectResult UnauthorizedResponse(string message)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Unauthorized",
-                Detail = message
             });
         }
 
