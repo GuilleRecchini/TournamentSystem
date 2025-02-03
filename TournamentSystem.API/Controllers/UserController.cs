@@ -42,9 +42,8 @@ namespace TournamentSystem.API.Controllers
 
             return StatusCode(
                 StatusCodes.Status201Created,
-                new { Message = dto.Role.ToString() + "  registered successfully.", UserId = userId });
+                new { Message = dto.Role.ToString() + "  registered successfully." });
         }
-
 
         [Authorize(Roles = nameof(UserRole.Administrator))]
         [HttpPut("update")]

@@ -8,7 +8,7 @@ namespace TournamentSystem.Domain.Entities
         public string Name { get; set; } = string.Empty;
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
-        public int? CountryId { get; set; }
+        public string CountryCode { get; set; }
         public TournamentPhase Phase { get; set; }
         public int? Winner { get; set; }
         public int? OrganizerId { get; set; }

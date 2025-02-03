@@ -4,6 +4,6 @@
     {
         public string Alias { get; set; }
         public string AvatarUrl { get; set; }
-        public int? CountryId { get; set; }
+        public string CountryCode { get; set; }
     }
 }

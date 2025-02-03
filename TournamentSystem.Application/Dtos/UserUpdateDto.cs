@@ -16,6 +16,8 @@ namespace TournamentSystem.Application.Dtos
         [EmailAddress]
         public string? Email { get; set; }
         public string? AvatarUrl { get; set; }
-        public int? CountryId { get; set; }
+
+        [StringLength(2, MinimumLength = 2)]
+        public string CountryCode { get; set; }
     }
 }

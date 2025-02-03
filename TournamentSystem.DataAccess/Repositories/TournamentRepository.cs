@@ -11,12 +11,12 @@ namespace TournamentSystem.DataAccess.Repositories
         {
             const string query = @"
                 INSERT INTO Tournaments 
-                    (name, start_datetime, end_datetime, country_id, organizer_id)
+                    (name, start_datetime, end_datetime, country_code, organizer_id)
                 VALUES 
-                    (@Name, @StartDatetime, @EndDateTime , @CountryId, @OrganizerId);
+                    (@Name, @StartDatetime, @EndDateTime , @CountryCode, @OrganizerId);
                 SELECT LAST_INSERT_ID();";
 
-            var parameters = new { t.Name, t.StartDateTime, t.EndDateTime, t.CountryId, t.OrganizerId };
+            var parameters = new { t.Name, t.StartDateTime, t.EndDateTime, t.CountryCode, t.OrganizerId };
 
             using var connection = CreateConnection();
             return await connection.QuerySingleAsync<int>(query, parameters);
@@ -80,7 +80,7 @@ namespace TournamentSystem.DataAccess.Repositories
                     name = @Name,
                     start_datetime = @StartDatetime,
                     end_datetime = @EndDateTime,
-                    country_id = @CountryId,
+                    country_code = @CountryCode,
                     winner = @Winner,
                     organizer_id = @OrganizerId 
                 WHERE tournament_id = @TournamentId;";
@@ -90,7 +90,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 t.Name,
                 t.StartDateTime,
                 t.EndDateTime,
-                t.CountryId,
+                t.CountryCode,
                 t.Winner,
                 t.OrganizerId,
                 t.TournamentId

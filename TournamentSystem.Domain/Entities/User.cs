@@ -10,7 +10,7 @@ namespace TournamentSystem.Domain.Entities
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public string AvatarUrl { get; set; }
-        public int? CountryId { get; set; }
+        public string CountryCode { get; set; }
         public UserRole Role { get; set; }
         public int? CreatedBy { get; set; }
     }

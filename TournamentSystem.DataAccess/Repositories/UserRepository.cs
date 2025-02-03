@@ -11,12 +11,12 @@ namespace TournamentSystem.DataAccess.Repositories
         {
             const string query = @"
                 INSERT INTO Users 
-                    (name, alias, email, password_hash, avatar_url, country_id, role, created_by) 
+                    (name, alias, email, password_hash, avatar_url, country_code, role, created_by) 
                 VALUES 
-                    (@Name, @Alias, @Email, @PasswordHash, @AvatarUrl, @CountryId, @Role, @CreatedBy); 
+                    (@Name, @Alias, @Email, @PasswordHash, @AvatarUrl, @CountryCode, @Role, @CreatedBy); 
                 SELECT LAST_INSERT_ID();";
 
-            var parameters = new { user.Name, user.Alias, user.Email, user.PasswordHash, user.AvatarUrl, user.CountryId, Role = user.Role.ToString().ToLower(), user.CreatedBy };
+            var parameters = new { user.Name, user.Alias, user.Email, user.PasswordHash, user.AvatarUrl, user.CountryCode, Role = user.Role.ToString().ToLower(), user.CreatedBy };
 
             using var connection = CreateConnection();
             return await connection.QuerySingleAsync<int>(query, parameters);
@@ -31,7 +31,7 @@ namespace TournamentSystem.DataAccess.Repositories
                     alias = @Alias,
                     email = @Email,                    
                     avatar_url = @AvatarUrl,
-                    country_id = @CountryId                    
+                    country_code = @CountryCode                    
                 WHERE user_id = @UserId;";
 
             var parameters = new
@@ -40,7 +40,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 user.Alias,
                 user.Email,
                 user.AvatarUrl,
-                user.CountryId,
+                user.CountryCode,
                 user.UserId,
             };
 

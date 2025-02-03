@@ -31,7 +31,7 @@ namespace TournamentSystem.API.Controllers
                 Email = dto.Email,
                 Password = dto.Password,
                 ConfirmPassword = dto.ConfirmPassword,
-                CountryId = dto.CountryId,
+                CountryCode = dto.CountryCode,
                 Role = UserRole.Player,
             };
 

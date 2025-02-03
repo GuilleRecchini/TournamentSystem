@@ -31,7 +31,7 @@ namespace TournamentSystem.Application.Services
                 Email = dto.Email,
                 PasswordHash = hashedPassword,
                 //AvatarUrl  Debería establecer una imagen por defecto que luego se pueda modificar
-                CountryId = dto.CountryId,
+                CountryCode = dto.CountryCode,
                 Role = dto.Role,
                 CreatedBy = dto.CreatedBy
             };
@@ -50,7 +50,7 @@ namespace TournamentSystem.Application.Services
             if (dto.Alias != null) user.Alias = dto.Alias;
             if (dto.Email != null) user.Email = dto.Email;
             if (dto.AvatarUrl != null) user.AvatarUrl = dto.AvatarUrl;
-            if (dto.CountryId.HasValue) user.CountryId = dto.CountryId.Value;
+            if (dto.CountryCode != null) user.CountryCode = dto.CountryCode;
 
             return await _userRepository.UpdateUserAsync(user);
         }

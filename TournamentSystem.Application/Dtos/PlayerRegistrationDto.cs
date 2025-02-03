@@ -24,6 +24,7 @@ namespace TournamentSystem.Application.Dtos
         public required string ConfirmPassword { get; set; }
 
         [Required]
-        public required int CountryId { get; set; }
+        [StringLength(2, MinimumLength = 2)]
+        public required string CountryCode { get; set; }
     }
 }

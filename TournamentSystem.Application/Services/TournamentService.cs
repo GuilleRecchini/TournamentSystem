@@ -31,7 +31,7 @@ namespace TournamentSystem.Application.Services
                 Name = dto.Name,
                 StartDateTime = dto.StartDateTime,
                 EndDateTime = dto.EndDateTime,
-                CountryId = dto.CountryId,
+                CountryCode = dto.CountryCode,
                 OrganizerId = oganizerId
             };
             var tournamentId = await _tournamentRepository.CreateTournamentAsync(tournament);
@@ -51,7 +51,7 @@ namespace TournamentSystem.Application.Services
             existingTournament.Name = dto.Name ?? existingTournament.Name;
             existingTournament.StartDateTime = dto.StartDateTime ?? existingTournament.StartDateTime;
             existingTournament.EndDateTime = dto.EndDateTime ?? existingTournament.EndDateTime;
-            existingTournament.CountryId = dto.CountryId ?? existingTournament.CountryId;
+            existingTournament.CountryCode = dto.CountryCode ?? existingTournament.CountryCode;
             existingTournament.Winner = dto.Winner ?? existingTournament.Winner;
             existingTournament.OrganizerId = dto.OrganizerId ?? existingTournament.OrganizerId;
 
@@ -73,7 +73,7 @@ namespace TournamentSystem.Application.Services
                     Name = tournament.Name,
                     StartDateTime = tournament.StartDateTime,
                     EndDateTime = tournament.EndDateTime,
-                    CountryId = tournament.CountryId,
+                    CountryCode = tournament.CountryCode,
                     Winner = tournament.Winner,
                     Series = tournament.Series,
                     Players = tournament.Players.ConvertAll(p => new UserForAdminsDto
@@ -83,7 +83,7 @@ namespace TournamentSystem.Application.Services
                         Alias = p.Alias,
                         Email = p.Email,
                         AvatarUrl = p.AvatarUrl,
-                        CountryId = p.CountryId,
+                        CountryCode = p.CountryCode,
                         Role = p.Role
                     }),
                     Judges = tournament.Judges.ConvertAll(j => new UserForAdminsDto
@@ -93,7 +93,7 @@ namespace TournamentSystem.Application.Services
                         Alias = j.Alias,
                         Email = j.Email,
                         AvatarUrl = j.AvatarUrl,
-                        CountryId = j.CountryId,
+                        CountryCode = j.CountryCode,
                         Role = j.Role
                     }),
                     Organizer = new UserForAdminsDto
@@ -103,7 +103,7 @@ namespace TournamentSystem.Application.Services
                         Alias = tournament.Organizer.Alias,
                         Email = tournament.Organizer.Email,
                         AvatarUrl = tournament.Organizer.AvatarUrl,
-                        CountryId = tournament.Organizer.CountryId,
+                        CountryCode = tournament.Organizer.CountryCode,
                         Role = tournament.Organizer.Role
                     }
                 };
@@ -115,26 +115,26 @@ namespace TournamentSystem.Application.Services
                 Name = tournament.Name,
                 StartDateTime = tournament.StartDateTime,
                 EndDateTime = tournament.EndDateTime,
-                CountryId = tournament.CountryId,
+                CountryCode = tournament.CountryCode,
                 Winner = tournament.Winner,
                 Series = tournament.Series,
                 Players = tournament.Players.ConvertAll(p => new BaseUserDto
                 {
                     Alias = p.Alias,
                     AvatarUrl = p.AvatarUrl,
-                    CountryId = p.CountryId
+                    CountryCode = p.CountryCode
                 }),
                 Judges = tournament.Judges.ConvertAll(j => new BaseUserDto
                 {
                     Alias = j.Alias,
                     AvatarUrl = j.AvatarUrl,
-                    CountryId = j.CountryId,
+                    CountryCode = j.CountryCode,
                 }),
                 Organizer = new BaseUserDto
                 {
                     Alias = tournament.Organizer.Alias,
                     AvatarUrl = tournament.Organizer.AvatarUrl,
-                    CountryId = tournament.Organizer.CountryId,
+                    CountryCode = tournament.Organizer.CountryCode,
                 }
             };
         }
