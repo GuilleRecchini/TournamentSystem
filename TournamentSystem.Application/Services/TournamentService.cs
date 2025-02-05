@@ -21,9 +21,14 @@ namespace TournamentSystem.Application.Services
 
         public async Task<int> CreateTournamentAsync(TournamentCreateDto dto, int oganizerId)
         {
-            var seriesExist = await _serieRepository.DoAllSeriesExistAsync(dto.SeriesIds.ToArray());
+            var minutesPerDay = CalculateTimePerDay(dto.StartDateTime, dto.EndDateTime).TotalMinutes;
 
-            if (!seriesExist)
+            if (minutesPerDay < 30)
+                throw new ValidationException("The tournament must have at least 30 minutes per day.");
+
+            var series = await _serieRepository.GetSeriesAsync(dto.SeriesIds.ToArray());
+
+            if (dto.SeriesIds.Count != series.Count)
                 throw new NotFoundException("One or more series do not exist");
 
             var tournament = new Tournament
@@ -32,13 +37,11 @@ namespace TournamentSystem.Application.Services
                 StartDateTime = dto.StartDateTime,
                 EndDateTime = dto.EndDateTime,
                 CountryCode = dto.CountryCode,
-                OrganizerId = oganizerId
+                OrganizerId = oganizerId,
+                Series = series
             };
-            var tournamentId = await _tournamentRepository.CreateTournamentAsync(tournament);
 
-            await _tournamentRepository.AddSeriesToTournamentAsync(tournamentId, dto.SeriesIds.ToArray());
-
-            return tournamentId;
+            return await _tournamentRepository.CreateTournamentAsync(tournament);
         }
 
         public async Task<bool> UpdateTournamentAsync(TournamentUpdateDto dto)
@@ -146,14 +149,13 @@ namespace TournamentSystem.Application.Services
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
 
-            if (tournament.Phase != Domain.Enums.TournamentPhase.Registration)
+            if (tournament.Phase != TournamentPhase.Registration)
                 throw new ValidationException("The tournament is not in the registration phase.");
 
             if (tournament.Players.Exists(p => p.UserId == playerId))
                 throw new ValidationException("The player is already registered for the tournament.");
 
             var maxPlayers = CalculateMaxPlayers(tournament);
-            //var currentPlayers = await _tournamentRepository.GetPlayerCountAsync(tournamentId);
             var currentPlayers = tournament.Players.Count;
 
             if (currentPlayers >= maxPlayers)
@@ -174,7 +176,7 @@ namespace TournamentSystem.Application.Services
 
             var judge = await _userRepository.GetUserByIdAsync(judgeId);
 
-            if (judge is null || judge.Role != Domain.Enums.UserRole.Judge)
+            if (judge is null || judge.Role != UserRole.Judge)
                 throw new NotFoundException("Judge not found");
 
             if (tournament.Judges.Exists(j => j.UserId == judgeId))
@@ -183,25 +185,70 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.AssignJudgeToTournamentAsync(tournamentId, judgeId);
         }
 
+        public async Task<bool> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds, int organizerId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament is null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.OrganizerId != organizerId)
+                throw new ValidationException("The organizer is not allowed to assign judges to this tournament.");
+
+            var series = await _serieRepository.GetSeriesAsync(seriesIds);
+
+            if (series.Count != seriesIds.Length)
+                throw new NotFoundException("One or more series do not exist");
+
+            if (series.Any(s => tournament.Series.Exists(ts => ts.SeriesId == s.SeriesId)))
+                throw new ValidationException("One or more series are already assigned to the tournament.");
+
+            return await _tournamentRepository.AddSeriesToTournamentAsync(tournamentId, seriesIds) > 0;
+
+        }
+
+        private TimeSpan CalculateTimePerDay(DateTime startDateTime, DateTime endDateTime)
+        {
+            var startHour = startDateTime.TimeOfDay;
+            var endHour = endDateTime.TimeOfDay;
+
+            if (endHour < startHour)
+                endHour = endHour.Add(new TimeSpan(24, 0, 0));
+
+            return endHour - startHour;
+        }
+
+        private int CalculateTotalDays(DateTime startDateTime, DateTime endDateTime)
+        {
+            var daysDiff = endDateTime - startDateTime;
+
+            var totalDays = 1;
+
+            if (daysDiff.TotalDays > 1)
+                totalDays = (int)Math.Ceiling(daysDiff.TotalDays);
+
+            return totalDays;
+        }
+
         private int CalculateMaxPlayers(Tournament tournament)
         {
             const int gameDurationInMinutes = 30;
 
-            var startHour = tournament.StartDateTime.TimeOfDay;
-            var endHour = tournament.EndDateTime.TimeOfDay;
-            var totalDays = tournament.EndDateTime.Day - tournament.StartDateTime.Day + 1;
-            var tournamentTotalMinutes = (endHour - startHour).TotalMinutes * totalDays;
-            var maxGames = tournamentTotalMinutes / gameDurationInMinutes;
+            var minutesPerDay = CalculateTimePerDay(tournament.StartDateTime, tournament.EndDateTime).TotalMinutes;
+            var totalDays = CalculateTotalDays(tournament.StartDateTime, tournament.EndDateTime);
+
+            var tournamentPlayableMinutes = (minutesPerDay - (minutesPerDay % gameDurationInMinutes)) * totalDays;
+            var maxGames = tournamentPlayableMinutes / gameDurationInMinutes;
             var possiblePlayers = maxGames + 1;
 
-            var maxPlayers = 1;
+            var maxPlayers = 2;
 
-            while ((maxPlayers * 2) + 1 <= possiblePlayers)
+            while (maxPlayers * 2 <= possiblePlayers)
             {
                 maxPlayers *= 2;
             }
 
-            return maxPlayers + 1;
+            return maxPlayers;
         }
     }
 }

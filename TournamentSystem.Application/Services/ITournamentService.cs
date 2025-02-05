@@ -10,5 +10,6 @@ namespace TournamentSystem.Application.Services
         Task<BaseTournamentDto> GetTournamentByIdAsync(int tournamentId, UserRole userRole);
         Task<bool> RegisterPlayerAsync(int tournamentId, int playerId);
         Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId);
+        Task<bool> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds, int organizerId);
     }
 }

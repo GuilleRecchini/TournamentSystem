@@ -80,7 +80,6 @@ namespace TournamentSystem.API.Controllers
             return Ok(new { Message = "Player successfully registered for the tournament." });
         }
 
-
         [Authorize(Roles = nameof(UserRole.Organizer))]
         [HttpPost("{tournamentId}/assign-judge/{judgeId}")]
         public async Task<IActionResult> AssignJudgeToTournamentAsync(int tournamentId, int judgeId)
@@ -90,6 +89,17 @@ namespace TournamentSystem.API.Controllers
             var success = await _tournamentService.AssignJudgeToTournamentAsync(tournamentId, judgeId, organizerId);
 
             return Ok(new { Message = "Judge successfully assigned to the tournament." });
+        }
+
+        [Authorize(Roles = nameof(UserRole.Organizer))]
+        [HttpPost("{tournamentId}/add-series")]
+        public async Task<IActionResult> AddSeriesToToutnamentAsync(int tournamentId, int[] seriesIds)
+        {
+            var organizerId = ClaimsHelper.GetUserId(User);
+
+            var success = await _tournamentService.AddSeriesToTournamentAsync(tournamentId, seriesIds, organizerId);
+
+            return Ok(new { Message = "Series successfully added to the tournament." });
         }
 
     }
