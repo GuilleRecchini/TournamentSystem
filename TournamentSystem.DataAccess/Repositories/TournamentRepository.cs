@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Options;
+using System.Data;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Infrastructure.Configurations;
 
@@ -19,7 +20,39 @@ namespace TournamentSystem.DataAccess.Repositories
             var parameters = new { t.Name, t.StartDateTime, t.EndDateTime, t.CountryCode, t.OrganizerId };
 
             using var connection = CreateConnection();
-            return await connection.QuerySingleAsync<int>(query, parameters);
+            connection.Open();
+            {
+                using var transaction = connection.BeginTransaction();
+                try
+                {
+                    t.TournamentId = await connection.QuerySingleAsync<int>(query, parameters, transaction);
+
+                    await AddSeriesToTournamentAsync(connection, transaction, t.TournamentId, t.Series.Select(s => s.SeriesId).ToArray());
+
+                    transaction.Commit();
+                    return t.TournamentId;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        private async Task<int> AddSeriesToTournamentAsync(IDbConnection connection, IDbTransaction? transaction, int tournamentId, int[] seriesIds)
+        {
+            const string query = @"
+                INSERT INTO tournament_series 
+                    (tournament_id, series_id)
+                SELECT
+                    @TournamentId, series_id
+                FROM series
+                WHERE series_id IN @SeriesIds;";
+
+            var parameters = new { tournamentId, seriesIds };
+
+            return await connection.ExecuteAsync(query, parameters, transaction);
         }
 
         public async Task<Tournament?> GetTournamentByIdAsync(int id)
@@ -100,20 +133,10 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
 
-        public async Task<int> AddSeriesToTournamentAsync(int tournamentId, int[] seriesId)
+        public async Task<int> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds)
         {
-            const string query = @"
-                INSERT INTO tournament_series 
-                    (tournament_id, series_id)
-                SELECT
-                    @TournamentId, series_id
-                FROM series
-                WHERE series_id IN @SeriesId;";
-
-            var parameters = new { tournamentId, seriesId };
-
             using var connection = CreateConnection();
-            return await connection.ExecuteAsync(query, parameters);
+            return await AddSeriesToTournamentAsync(connection, null, tournamentId, seriesIds);
         }
 
         public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId)
