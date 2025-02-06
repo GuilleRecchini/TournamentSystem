@@ -7,5 +7,9 @@
         public string Illustration { get; set; }
         public int Attack { get; set; }
         public int Defense { get; set; }
+
+
+        // Navigation properties
+        public List<Serie> Series { get; set; }
     }
 }

@@ -17,6 +17,41 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.QueryFirstOrDefaultAsync<Card>(query, parameters);
         }
 
+        public async Task<List<Card>> GetCardsAsync(int[] cardsIds)
+        {
+            const string query = @"
+                SELECT *
+                FROM cards c
+                JOIN card_series cs ON c.card_id = cs.card_id
+                JOIN series s on cs.series_id = s.series_id
+                WHERE c.card_id IN @CardsIds";
+
+            using var connection = CreateConnection();
+
+            var cardsDictionary = new Dictionary<int, Card>();
+
+            var cards = await connection.QueryAsync<Card, Serie, Card>(
+                query,
+                (card, series) =>
+                {
+                    if (!cardsDictionary.TryGetValue(card.CardId, out var cardEntry))
+                    {
+                        cardEntry = card;
+                        cardEntry.Series = [];
+                        cardsDictionary.Add(cardEntry.CardId, cardEntry);
+                    }
+                    if (series is not null && !cardEntry.Series.Any(c => c.SeriesId == series.SeriesId))
+                    {
+                        cardEntry.Series.Add(series);
+                    }
+                    return cardEntry;
+                },
+                new { CardsIds = cardsIds },
+                splitOn: "series_id");
+
+            return cardsDictionary.Values.ToList();
+        }
+
         public async Task<bool> DoAllCardsExistAsync(int[] cardIds)
         {
             const string query = @"

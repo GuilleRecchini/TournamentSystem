@@ -11,12 +11,21 @@ namespace TournamentSystem.Application.Services
         private readonly ITournamentRepository _tournamentRepository;
         private readonly ISerieRepository _serieRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ICardRepository _cardRepository;
+        private readonly IPlayerRepository _playerRepository;
 
-        public TournamentService(ITournamentRepository tournamentRepository, ISerieRepository serieRepository, IUserRepository userRepository)
+        public TournamentService(
+            ITournamentRepository tournamentRepository,
+            ISerieRepository serieRepository,
+            IUserRepository userRepository,
+            ICardRepository cardRepository,
+            IPlayerRepository playerRepository)
         {
             _tournamentRepository = tournamentRepository;
             _serieRepository = serieRepository;
             _userRepository = userRepository;
+            _cardRepository = cardRepository;
+            _playerRepository = playerRepository;
         }
 
         public async Task<int> CreateTournamentAsync(TournamentCreateDto dto, int oganizerId)
@@ -78,6 +87,7 @@ namespace TournamentSystem.Application.Services
                     EndDateTime = tournament.EndDateTime,
                     CountryCode = tournament.CountryCode,
                     Winner = tournament.Winner,
+                    MaxPlayers = CalculateMaxPlayers(tournament),
                     Series = tournament.Series,
                     Players = tournament.Players.ConvertAll(p => new UserForAdminsDto
                     {
@@ -120,6 +130,7 @@ namespace TournamentSystem.Application.Services
                 EndDateTime = tournament.EndDateTime,
                 CountryCode = tournament.CountryCode,
                 Winner = tournament.Winner,
+                MaxPlayers = CalculateMaxPlayers(tournament),
                 Series = tournament.Series,
                 Players = tournament.Players.ConvertAll(p => new BaseUserDto
                 {
@@ -142,7 +153,7 @@ namespace TournamentSystem.Application.Services
             };
         }
 
-        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId)
+        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds)
         {
             var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
 
@@ -158,10 +169,29 @@ namespace TournamentSystem.Application.Services
             var maxPlayers = CalculateMaxPlayers(tournament);
             var currentPlayers = tournament.Players.Count;
 
-            if (currentPlayers >= maxPlayers)
+            if (currentPlayers == maxPlayers)
                 throw new ValidationException("The tournament has reached its maximum capacity of players.");
 
-            return await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId);
+            if (cardsIds.Length > 15)
+                throw new ValidationException("The player can only register up to 15 cards.");
+
+            if (cardsIds.Length != cardsIds.Distinct().Count())
+                throw new ValidationException("The player can only register unique cards.");
+
+            var playerCards = await _playerRepository.GetCardsByPlayerIdAsync(playerId);
+            var areCardsOwnedByPlayer = cardsIds.All(cardId => playerCards.Any(c => c.CardId == cardId));
+
+            if (!areCardsOwnedByPlayer)
+                throw new ValidationException("One or more cards are not owned by the player.");
+
+            var cards = await _cardRepository.GetCardsAsync(cardsIds);
+            var tournamentSeries = tournament.Series.Select(s => s.SeriesId);
+            var allCardsValid = cards.All(c => c.Series.Any(cs => tournamentSeries.Contains(cs.SeriesId)));
+
+            if (!allCardsValid)
+                throw new ValidationException("One or more cards are not from the tournament series.");
+
+            return await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId);//agregar cartas
         }
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)
@@ -204,10 +234,9 @@ namespace TournamentSystem.Application.Services
                 throw new ValidationException("One or more series are already assigned to the tournament.");
 
             return await _tournamentRepository.AddSeriesToTournamentAsync(tournamentId, seriesIds) > 0;
-
         }
 
-        private TimeSpan CalculateTimePerDay(DateTime startDateTime, DateTime endDateTime)
+        private static TimeSpan CalculateTimePerDay(DateTime startDateTime, DateTime endDateTime)
         {
             var startHour = startDateTime.TimeOfDay;
             var endHour = endDateTime.TimeOfDay;
@@ -218,7 +247,7 @@ namespace TournamentSystem.Application.Services
             return endHour - startHour;
         }
 
-        private int CalculateTotalDays(DateTime startDateTime, DateTime endDateTime)
+        private static int CalculateTotalDays(DateTime startDateTime, DateTime endDateTime)
         {
             var daysDiff = endDateTime - startDateTime;
 

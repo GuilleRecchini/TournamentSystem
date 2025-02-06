@@ -61,11 +61,11 @@ namespace TournamentSystem.API.Controllers
 
         [Authorize(Roles = nameof(UserRole.Player))]
         [HttpPost("{tournamentId}/register")]
-        public async Task<IActionResult> RegisterPlayerAsync(int tournamentId)
+        public async Task<IActionResult> RegisterPlayerAsync(int tournamentId, int[] cardsIds)
         {
             var playerId = ClaimsHelper.GetUserId(User);
 
-            var success = await _tournamentService.RegisterPlayerAsync(tournamentId, playerId);
+            var success = await _tournamentService.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
 
             if (!success)
             {
