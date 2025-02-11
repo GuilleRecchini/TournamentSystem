@@ -32,7 +32,7 @@ namespace TournamentSystem.Application.Services
             var addedCount = await _playerRepository.AddCardsToCollectionAsync(cardsIds, playerId);
 
             if (addedCount > 0)
-                throw new Exception("All cards were already in your collection.");
+                throw new ValidationException("All cards were already in your collection.");
 
             return addedCount;
         }

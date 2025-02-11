@@ -139,18 +139,53 @@ namespace TournamentSystem.DataAccess.Repositories
             return await AddSeriesToTournamentAsync(connection, null, tournamentId, seriesIds);
         }
 
-        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId)
+        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds)
         {
-            const string query = @"
+            const string registerPlayerQuery = @"
                 INSERT INTO tournament_players 
                     (tournament_id, user_id)
                 VALUES 
                     (@TournamentId, @PlayerId);";
 
+            const string createDeckQuery = @"
+                INSERT INTO decks 
+                    (user_id, tournament_id)
+                VALUES 
+                    (@PlayerId, @TournamentId);
+                SELECT LAST_INSERT_ID();";
+
+            const string addDeckCardsQuery = @"
+                INSERT INTO deck_cards
+                    (deck_id, card_id)
+                SELECT
+                    @DeckId, card_id
+                FROM cards
+                WHERE card_id IN @CardsIds;";
+
+
             var parameters = new { tournamentId, playerId };
 
             using var connection = CreateConnection();
-            return await connection.ExecuteAsync(query, parameters) > 0;
+            connection.Open();
+            {
+                using var transaction = connection.BeginTransaction();
+                try
+                {
+                    await connection.ExecuteAsync(registerPlayerQuery, new { tournamentId, playerId }, transaction);
+
+                    var deckId = await connection.QuerySingleAsync<int>(createDeckQuery, new { playerId, tournamentId }, transaction);
+
+                    await connection.ExecuteAsync(addDeckCardsQuery, new { deckId, cardsIds }, transaction);
+
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
         }
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId)

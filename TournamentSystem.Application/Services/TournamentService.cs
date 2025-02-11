@@ -191,7 +191,7 @@ namespace TournamentSystem.Application.Services
             if (!allCardsValid)
                 throw new ValidationException("One or more cards are not from the tournament series.");
 
-            return await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId);//agregar cartas
+            return await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
         }
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)
