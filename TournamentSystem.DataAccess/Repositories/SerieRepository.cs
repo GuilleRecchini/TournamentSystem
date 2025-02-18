@@ -14,7 +14,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 FROM series
                 WHERE series_id IN @SerieIds";
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return (await connection.QueryAsync<Serie>(query, new { SerieIds = serieIds })).ToList();
         }
 
@@ -25,7 +25,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 FROM series
                 WHERE series_id IN @SerieIds";
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             var count = await connection.ExecuteScalarAsync<int>(query, new { SerieIds = serieIds });
             return count == serieIds.Length;
         }

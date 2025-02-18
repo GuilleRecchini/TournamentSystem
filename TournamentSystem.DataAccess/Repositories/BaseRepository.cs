@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using MySqlConnector;
-using System.Data;
+using System.Data.Common;
 using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.DataAccess.Repositories
@@ -14,7 +14,7 @@ namespace TournamentSystem.DataAccess.Repositories
             _connectionString = options.Value.DefaultConnection;
         }
 
-        protected IDbConnection CreateConnection()
+        protected DbConnection CreateConnection()
         {
             return new MySqlConnection(_connectionString);
         }

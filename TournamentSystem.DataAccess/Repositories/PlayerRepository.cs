@@ -19,7 +19,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { PlayerId = playerId, CardIds = cardIds };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters);
         }
 
@@ -33,9 +33,8 @@ namespace TournamentSystem.DataAccess.Repositories
                 WHERE pc.user_id = @PlayerId";
 
             var parameters = new { PlayerId = playerId };
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.QueryAsync<Card>(query, parameters);
-
         }
     }
 }

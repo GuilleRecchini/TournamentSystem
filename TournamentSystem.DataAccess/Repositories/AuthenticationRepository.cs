@@ -16,7 +16,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { refreshToken.UserId, refreshToken.Token, refreshToken.Expires, refreshToken.CreatedAt };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             await connection.ExecuteAsync(query, parameters);
         }
 
@@ -27,7 +27,7 @@ namespace TournamentSystem.DataAccess.Repositories
             FROM RefreshTokens
             WHERE token = @Token AND expires > NOW()";
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
 
             return await connection.QuerySingleOrDefaultAsync<RefreshToken>(query, new { Token = token });
         }
@@ -38,7 +38,7 @@ namespace TournamentSystem.DataAccess.Repositories
             DELETE FROM RefreshTokens
             WHERE token = @Token";
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             await connection.ExecuteAsync(query, new { Token = token });
         }
     }

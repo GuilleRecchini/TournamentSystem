@@ -13,7 +13,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { Id = id };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.QueryFirstOrDefaultAsync<Card>(query, parameters);
         }
 
@@ -26,7 +26,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 JOIN series s on cs.series_id = s.series_id
                 WHERE c.card_id IN @CardsIds";
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
 
             var cardsDictionary = new Dictionary<int, Card>();
 
@@ -59,11 +59,10 @@ namespace TournamentSystem.DataAccess.Repositories
                 FROM cards
                 WHERE card_id IN @CardIds";
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             var count = await connection.ExecuteScalarAsync<int>(query, new { CardIds = cardIds });
             return count == cardIds.Length;
         }
-
 
         public async Task<IEnumerable<Card>?> GetCardsBySerieAsync(int id)
         {
@@ -82,7 +81,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { SeriesId = id };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.QueryAsync<Card>(query, parameters);
         }
     }

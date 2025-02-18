@@ -20,10 +20,10 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { t.Name, t.StartDateTime, t.EndDateTime, t.CountryCode, t.OrganizerId };
 
-            using var connection = CreateConnection();
-            connection.Open();
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
             {
-                using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 try
                 {
                     t.TournamentId = await connection.QuerySingleAsync<int>(query, parameters, transaction);
@@ -41,7 +41,7 @@ namespace TournamentSystem.DataAccess.Repositories
             }
         }
 
-        private async Task<int> AddSeriesToTournamentAsync(IDbConnection connection, IDbTransaction? transaction, int tournamentId, int[] seriesIds)
+        private static async Task<int> AddSeriesToTournamentAsync(IDbConnection connection, IDbTransaction? transaction, int tournamentId, int[] seriesIds)
         {
             const string query = @"
                 INSERT INTO tournament_series 
@@ -71,7 +71,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { TournamentId = id };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
 
             var tournamentDictionary = new Dictionary<int, Tournament>();
 
@@ -130,13 +130,13 @@ namespace TournamentSystem.DataAccess.Repositories
                 t.TournamentId
             };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
 
         public async Task<int> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds)
         {
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await AddSeriesToTournamentAsync(connection, null, tournamentId, seriesIds);
         }
 
@@ -163,13 +163,10 @@ namespace TournamentSystem.DataAccess.Repositories
                 FROM cards
                 WHERE card_id IN @CardsIds;";
 
-
-            var parameters = new { tournamentId, playerId };
-
-            using var connection = CreateConnection();
-            connection.Open();
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
             {
-                using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 try
                 {
                     await connection.ExecuteAsync(registerPlayerQuery, new { tournamentId, playerId }, transaction);
@@ -199,7 +196,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { tournamentId, judgeId };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
 
@@ -212,7 +209,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { TournamentId = tournamentId };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.ExecuteScalarAsync<int>(query, parameters);
         }
 
@@ -232,10 +229,10 @@ namespace TournamentSystem.DataAccess.Repositories
                 VALUES
                     (@TournamentId, @RoundNumber, @StartTime, @Player1Id, @Player2Id)";
 
-            using var connection = CreateConnection();
-            connection.Open();
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
             {
-                using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 try
                 {
                     await connection.ExecuteAsync(updateTournamentQuery, tournamentParameters, transaction);

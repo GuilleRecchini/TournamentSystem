@@ -18,7 +18,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { user.Name, user.Alias, user.Email, user.PasswordHash, user.AvatarUrl, user.CountryCode, Role = user.Role.ToString().ToLower(), user.CreatedBy };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.QuerySingleAsync<int>(query, parameters);
         }
 
@@ -44,7 +44,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 user.UserId,
             };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
 
@@ -56,7 +56,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { UserId = userId };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
 
@@ -66,7 +66,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { Id = id };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.QueryFirstOrDefaultAsync<User>(query, parameters);
         }
 
@@ -78,7 +78,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { email };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             return await connection.QuerySingleOrDefaultAsync<User?>(query, parameters);
         }
 
@@ -91,7 +91,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { Email = email, Alias = alias };
 
-            using var connection = CreateConnection();
+            await using var connection = CreateConnection();
             var userCount = await connection.QuerySingleAsync<int>(query, parameters);
 
             return userCount > 0;
