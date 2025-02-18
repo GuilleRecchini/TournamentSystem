@@ -13,6 +13,7 @@ namespace TournamentSystem.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly ICardRepository _cardRepository;
         private readonly IPlayerRepository _playerRepository;
+        private const int gameDurationInMinutes = 30;
 
         public TournamentService(
             ITournamentRepository tournamentRepository,
@@ -184,7 +185,7 @@ namespace TournamentSystem.Application.Services
             if (!areCardsOwnedByPlayer)
                 throw new ValidationException("One or more cards are not owned by the player.");
 
-            var cards = await _cardRepository.GetCardsAsync(cardsIds);
+            var cards = await _cardRepository.GetCardsByIdsWithSeriesAsync(cardsIds);
             var tournamentSeries = tournament.Series.Select(s => s.SeriesId);
             var allCardsValid = cards.All(c => c.Series.Any(cs => tournamentSeries.Contains(cs.SeriesId)));
 
@@ -236,6 +237,24 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.AddSeriesToTournamentAsync(tournamentId, seriesIds) > 0;
         }
 
+        public async Task<bool> FinalizeRegistrationAsync(int tournamentId, int organizerId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament is null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.OrganizerId != organizerId)
+                throw new ValidationException("The organizer is not allowed to assign judges to this tournament.");
+
+            if (tournament.Phase != TournamentPhase.Registration)
+                throw new ValidationException("The tournament is not in the registration phase.");
+
+            var games = ScheduleGames(tournament);
+
+            return await _tournamentRepository.FinalizeRegistrationAndStartTournamentAsync(tournamentId, games);
+        }
+
         private static TimeSpan CalculateTimePerDay(DateTime startDateTime, DateTime endDateTime)
         {
             var startHour = startDateTime.TimeOfDay;
@@ -259,10 +278,8 @@ namespace TournamentSystem.Application.Services
             return totalDays;
         }
 
-        private int CalculateMaxPlayers(Tournament tournament)
+        private static int CalculateMaxPlayers(Tournament tournament)
         {
-            const int gameDurationInMinutes = 30;
-
             var minutesPerDay = CalculateTimePerDay(tournament.StartDateTime, tournament.EndDateTime).TotalMinutes;
             var totalDays = CalculateTotalDays(tournament.StartDateTime, tournament.EndDateTime);
 
@@ -278,6 +295,55 @@ namespace TournamentSystem.Application.Services
             }
 
             return maxPlayers;
+        }
+
+        private static List<Game> ScheduleGames(Tournament tournament)
+        {
+            var games = new List<Game>();
+
+            var minutesPerDay = CalculateTimePerDay(tournament.StartDateTime, tournament.EndDateTime).TotalMinutes;
+            var playableMinutesPerDay = minutesPerDay - (minutesPerDay % gameDurationInMinutes);
+            var maxGamesPerDay = (int)(playableMinutesPerDay / gameDurationInMinutes);
+            var totalGames = tournament.Players.Count - 1;
+            var numRounds = (int)Math.Log(tournament.Players.Count, 2);
+
+            var gameDateTime = tournament.StartDateTime;
+            var shuffledPlayers = tournament.Players.Select(p => p.UserId).OrderBy(x => new Random().Next()).ToList();
+            var gamesRemaining = totalGames;
+            var playerIndex = 0;
+
+            while (gamesRemaining > 0)
+            {
+                for (var i = 0; i < maxGamesPerDay && gamesRemaining > 0; i++)
+                {
+                    var roundNumber = numRounds - (int)Math.Log(gamesRemaining, 2);
+
+                    var game = new Game()
+                    {
+                        TournamentId = tournament.TournamentId,
+                        RoundNumber = roundNumber,
+                        StartTime = gameDateTime,
+                    };
+
+                    if (roundNumber == 1)
+                    {
+                        game.Player1Id = shuffledPlayers[playerIndex];
+                        game.Player2Id = shuffledPlayers[playerIndex + 1];
+                        playerIndex += 2;
+                    }
+
+                    games.Add(game);
+                    gameDateTime = gameDateTime.AddMinutes(gameDurationInMinutes);
+                    gamesRemaining--;
+                }
+
+                if (gamesRemaining > 0)
+                {
+                    gameDateTime = gameDateTime.AddMinutes(-playableMinutesPerDay).AddDays(1);
+                }
+            }
+
+            return games;
         }
     }
 }

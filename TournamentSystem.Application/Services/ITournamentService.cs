@@ -11,5 +11,6 @@ namespace TournamentSystem.Application.Services
         Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds);
         Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId);
         Task<bool> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds, int organizerId);
+        Task<bool> FinalizeRegistrationAsync(int tournamentId, int organizerId);
     }
 }

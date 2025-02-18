@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using System.Data;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Enums;
 using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.DataAccess.Repositories
@@ -213,6 +214,44 @@ namespace TournamentSystem.DataAccess.Repositories
 
             using var connection = CreateConnection();
             return await connection.ExecuteScalarAsync<int>(query, parameters);
+        }
+
+        public async Task<bool> FinalizeRegistrationAndStartTournamentAsync(int tournamentId, List<Game> games)
+        {
+            const string updateTournamentQuery = @"
+                UPDATE Tournaments 
+                SET 
+                    phase = @Phase
+                WHERE tournament_id = @TournamentId;";
+
+            var tournamentParameters = new { Phase = nameof(TournamentPhase.Tournament).ToLower(), tournamentId };
+
+            const string addGamesQuery = @"
+                INSERT INTO games
+                    (tournament_id, round_number, start_time, player1_id, player2_id)
+                VALUES
+                    (@TournamentId, @RoundNumber, @StartTime, @Player1Id, @Player2Id)";
+
+            using var connection = CreateConnection();
+            connection.Open();
+            {
+                using var transaction = connection.BeginTransaction();
+                try
+                {
+                    await connection.ExecuteAsync(updateTournamentQuery, tournamentParameters, transaction);
+
+                    await connection.ExecuteAsync(addGamesQuery, games, transaction);
+
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            throw new NotImplementedException();
         }
     }
 }

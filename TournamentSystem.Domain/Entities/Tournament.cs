@@ -18,5 +18,6 @@ namespace TournamentSystem.Domain.Entities
         public List<User> Players { get; set; }
         public List<User> Judges { get; set; }
         public User Organizer { get; set; }
+        public List<Game> Games { get; set; }
     }
 }

@@ -17,7 +17,7 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.QueryFirstOrDefaultAsync<Card>(query, parameters);
         }
 
-        public async Task<List<Card>> GetCardsAsync(int[] cardsIds)
+        public async Task<List<Card>> GetCardsByIdsWithSeriesAsync(int[] cardsIds)
         {
             const string query = @"
                 SELECT *

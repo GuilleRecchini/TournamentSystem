@@ -102,5 +102,16 @@ namespace TournamentSystem.API.Controllers
             return Ok(new { Message = "Series successfully added to the tournament." });
         }
 
+        [Authorize(Roles = nameof(UserRole.Organizer))]
+        [HttpPost("{tournamentId}/finalize-registration")]
+        public async Task<IActionResult> FinalizeRegistrationAsync(int tournamentId)
+        {
+            var organizerId = ClaimsHelper.GetUserId(User);
+
+            await _tournamentService.FinalizeRegistrationAsync(tournamentId, organizerId);
+
+            return Ok(new { Message = "Registration successfully finalized. Tournament phase started." });
+        }
+
     }
 }

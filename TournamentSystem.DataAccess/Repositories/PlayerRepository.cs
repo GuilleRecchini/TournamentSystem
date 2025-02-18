@@ -10,7 +10,7 @@ namespace TournamentSystem.DataAccess.Repositories
         public async Task<int> AddCardsToCollectionAsync(int[] cardIds, int playerId)
         {
             const string query = @"
-                INSERT IGNORE INTO player_cards 
+                INSERT INTO player_cards 
                     (user_id, card_id) 
                 SELECT 
                     @PlayerId, card_id 
