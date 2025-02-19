@@ -113,5 +113,28 @@ namespace TournamentSystem.API.Controllers
             return Ok(new { Message = "Registration successfully finalized. Tournament phase started." });
         }
 
+        [Authorize(Roles = nameof(UserRole.Judge))]
+        [HttpPost("{tournamentId}/set-game-winner/{gameId}/{winnerId}")]
+        public async Task<IActionResult> SetGameWinnerAsync(int tournamentId, int gameId, int winnerId)
+        {
+            var judgeId = ClaimsHelper.GetUserId(User);
+
+            var success = await _tournamentService.SetGameWinnerAsync(tournamentId, gameId, judgeId, winnerId);
+
+            return Ok(new { Message = "Game winner successfully set." });
+        }
+
+        [Authorize(Roles = nameof(UserRole.Judge))]
+        [HttpPost("{tournamentId}/disqualify-player/{playerId}")]
+        public async Task<IActionResult> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason)
+        {
+            var judgeId = ClaimsHelper.GetUserId(User);
+
+            await _tournamentService.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
+
+            return Ok(new { Message = "Player successfully disqualified." });
+
+            throw new NotImplementedException();
+        }
     }
 }

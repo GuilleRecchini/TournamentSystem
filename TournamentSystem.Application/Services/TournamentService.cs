@@ -255,6 +255,58 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.FinalizeRegistrationAndStartTournamentAsync(tournamentId, games);
         }
 
+        public async Task<bool> SetGameWinnerAsync(int tournamentId, int gameId, int judgeId, int winnerId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament is null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.Phase != TournamentPhase.Tournament)
+                throw new ValidationException("The tournament is not in the tournament phase.");
+
+            if (!tournament.Judges.Exists(j => j.UserId == judgeId))
+                throw new ValidationException("The judge is not assigned to this tournament.");
+
+            var game = tournament.Games.FirstOrDefault(g => g.GameId == gameId);
+
+            if (game is null)
+                throw new NotFoundException("Game not found");
+
+            if (game.StartTime > DateTime.Now)
+                throw new ValidationException("The game has not started yet.");
+
+            if (game.Player1Id != winnerId && game.Player2Id != winnerId)
+                throw new ValidationException("The winner is not a player in this game.");
+
+            if (game.WinnerId != null)
+                throw new ValidationException("Game already has a winner.");
+
+            return await _tournamentRepository.SetGameWinnerAsync(gameId, winnerId);
+        }
+
+        public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int judgeId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament == null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.Phase != TournamentPhase.Tournament)
+                throw new ValidationException("The tournament is not in the tournament phase.");
+
+            if (!tournament.Judges.Exists(j => j.UserId == judgeId))
+                throw new ValidationException("The judge is not assigned to this tournament.");
+
+            if (!tournament.Players.Exists(p => p.UserId == playerId))
+                throw new ValidationException("The player is not registered for the tournament.");
+
+            //throw new ValidationException("The player is already disqualified from the tournament.");
+
+            return await _tournamentRepository.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
+        }
+
+        // Metodos privados para calculos
         private static TimeSpan CalculateTimePerDay(DateTime startDateTime, DateTime endDateTime)
         {
             var startHour = startDateTime.TimeOfDay;

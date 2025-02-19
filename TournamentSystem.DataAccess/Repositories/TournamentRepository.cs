@@ -59,7 +59,7 @@ namespace TournamentSystem.DataAccess.Repositories
         public async Task<Tournament?> GetTournamentByIdAsync(int id)
         {
             const string query = @"
-                    SELECT t.*, s.*, p.*, ju.*, o.* FROM Tournaments t
+                    SELECT t.*, s.*, p.*, ju.*, o.*,g.* FROM Tournaments t
                     LEFT JOIN tournament_series AS ts ON t.tournament_id = ts.tournament_id
                     LEFT JOIN series AS s ON ts.series_id = s.series_id
                     LEFT JOIN tournament_players AS tp ON t.tournament_id = tp.tournament_id
@@ -67,6 +67,7 @@ namespace TournamentSystem.DataAccess.Repositories
                     LEFT JOIN tournament_judges AS tj ON t.tournament_id = tj.tournament_id
                     LEFT JOIN users AS ju ON tj.user_id = ju.user_id
                     LEFT JOIN users AS o ON t.organizer_id = o.user_id
+                    LEFT JOIN games AS g ON t.tournament_id = g.tournament_id
                     WHERE t.tournament_id = @TournamentId;";
 
             var parameters = new { TournamentId = id };
@@ -75,9 +76,9 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var tournamentDictionary = new Dictionary<int, Tournament>();
 
-            var tournament = await connection.QueryAsync<Tournament, Serie, User, User, User, Tournament>(
+            var tournament = await connection.QueryAsync<Tournament, Serie, User, User, User, Game, Tournament>(
                 query,
-                (t, serie, player, judge, organizer) =>
+                (t, serie, player, judge, organizer, game) =>
                 {
                     if (!tournamentDictionary.TryGetValue(t.TournamentId, out var tournamentEntry))
                     {
@@ -86,6 +87,7 @@ namespace TournamentSystem.DataAccess.Repositories
                         tournamentEntry.Players = [];
                         tournamentEntry.Judges = [];
                         tournamentEntry.Organizer = organizer;
+                        tournamentEntry.Games = [];
                         tournamentDictionary.Add(tournamentEntry.TournamentId, tournamentEntry);
                     }
 
@@ -98,10 +100,13 @@ namespace TournamentSystem.DataAccess.Repositories
                     if (judge is not null && !tournamentEntry.Judges.Any(j => j.UserId == judge.UserId))
                         tournamentEntry.Judges.Add(judge);
 
+                    if (game is not null && !tournamentEntry.Games.Any(g => g.GameId == game.GameId))
+                        tournamentEntry.Games.Add(game);
+
                     return tournamentEntry;
                 },
                 parameters,
-                splitOn: "series_id, user_id,user_id,user_id");
+                splitOn: "series_id, user_id,user_id,user_id,game_id");
 
             return tournamentDictionary.Values.FirstOrDefault();
         }
@@ -248,6 +253,38 @@ namespace TournamentSystem.DataAccess.Repositories
                     throw;
                 }
             }
+            throw new NotImplementedException();
+        }
+
+        public async Task<bool> SetGameWinnerAsync(int gameId, int winnerId)
+        {
+            const string query = @"
+                UPDATE Games
+                SET 
+                    winner_id = @WinnerId
+                WHERE game_id = @GameId;";
+
+            var parameters = new { GameId = gameId, WinnerId = winnerId };
+
+            await using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+
+            throw new NotImplementedException();
+        }
+
+        public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int disqualifiedBy)
+        {
+            const string query = @"
+                INSERT INTO disqualifications
+                    (user_id, tournament_id, reason, disqualified_by)
+                VALUES
+                    (@PlayerId, @TournamentId, @Reason, @DisqualifiedBy);";
+
+            var parameters = new { PlayerId = playerId, TournamentId = tournamentId, Reason = reason, DisqualifiedBy = disqualifiedBy };
+
+            await using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+
             throw new NotImplementedException();
         }
     }
