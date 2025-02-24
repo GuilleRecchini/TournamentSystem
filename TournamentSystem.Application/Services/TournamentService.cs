@@ -156,13 +156,10 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds)
         {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, null, null, TournamentPhase.Registration);
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
-
-            if (tournament.Phase != TournamentPhase.Registration)
-                throw new ValidationException("The tournament is not in the registration phase.");
 
             if (tournament.Players.Exists(p => p.UserId == playerId))
                 throw new ValidationException("The player is already registered for the tournament.");
@@ -197,13 +194,10 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)
         {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, organizerId: organizerId);
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
-
-            if (tournament.OrganizerId != organizerId)
-                throw new ValidationException("The organizer is not allowed to assign judges to this tournament.");
 
             var judge = await _userRepository.GetUserByIdAsync(judgeId);
 
@@ -223,9 +217,6 @@ namespace TournamentSystem.Application.Services
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
 
-            if (tournament.OrganizerId != organizerId)
-                throw new ValidationException("The organizer is not allowed to assign judges to this tournament.");
-
             var series = await _serieRepository.GetSeriesAsync(seriesIds);
 
             if (series.Count != seriesIds.Length)
@@ -239,16 +230,10 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> FinalizeRegistrationAsync(int tournamentId, int organizerId)
         {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, organizerId, null, TournamentPhase.Registration);
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
-
-            if (tournament.OrganizerId != organizerId)
-                throw new ValidationException("The organizer is not allowed to assign judges to this tournament.");
-
-            if (tournament.Phase != TournamentPhase.Registration)
-                throw new ValidationException("The tournament is not in the registration phase.");
 
             var games = ScheduleGames(tournament);
 
@@ -257,16 +242,10 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> SetGameWinnerAsync(int tournamentId, int gameId, int judgeId, int winnerId)
         {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, null, [judgeId], TournamentPhase.Tournament);
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
-
-            if (tournament.Phase != TournamentPhase.Tournament)
-                throw new ValidationException("The tournament is not in the tournament phase.");
-
-            if (!tournament.Judges.Exists(j => j.UserId == judgeId))
-                throw new ValidationException("The judge is not assigned to this tournament.");
 
             var game = tournament.Games.FirstOrDefault(g => g.GameId == gameId);
 
@@ -288,16 +267,10 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int judgeId)
         {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, null, [judgeId], TournamentPhase.Tournament);
 
             if (tournament == null)
                 throw new NotFoundException("Tournament not found");
-
-            if (tournament.Phase != TournamentPhase.Tournament)
-                throw new ValidationException("The tournament is not in the tournament phase.");
-
-            if (!tournament.Judges.Exists(j => j.UserId == judgeId))
-                throw new ValidationException("The judge is not assigned to this tournament.");
 
             if (!tournament.Players.Exists(p => p.UserId == playerId))
                 throw new ValidationException("The player is not registered for the tournament.");
@@ -309,16 +282,10 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> AdvanceTournamentRoundAsync(int tournamentId, int judgeId)
         {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, null, [judgeId], TournamentPhase.Tournament);
 
             if (tournament == null)
                 throw new NotFoundException("Tournament not found");
-
-            if (tournament.Phase != TournamentPhase.Tournament)
-                throw new ValidationException("The tournament is not in the tournament phase.");
-
-            if (!tournament.Judges.Exists(j => j.UserId == judgeId))
-                throw new ValidationException("The judge is not assigned to this tournament.");
 
             var unfinishedGamesCount = tournament.Games.Count(g => g.WinnerId == null && g.Player1Id != null && g.Player2Id != null);
 
@@ -435,7 +402,6 @@ namespace TournamentSystem.Application.Services
                     var game = new Game()
                     {
                         TournamentId = tournament.TournamentId,
-                        //RoundNumber = roundNumber,
                         StartTime = gameDateTime,
                     };
 

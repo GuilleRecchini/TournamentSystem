@@ -56,9 +56,9 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters, transaction);
         }
 
-        public async Task<Tournament?> GetTournamentByIdAsync(int id)
+        public async Task<Tournament?> GetTournamentByIdAsync(int id, int? organizerId, int[]? judgeIds, TournamentPhase? phase)
         {
-            const string query = @"
+            var query = @"
                     SELECT t.*, s.*, p.*, ju.*, o.*,g.* FROM Tournaments t
                     LEFT JOIN tournament_series AS ts ON t.tournament_id = ts.tournament_id
                     LEFT JOIN series AS s ON ts.series_id = s.series_id
@@ -68,9 +68,28 @@ namespace TournamentSystem.DataAccess.Repositories
                     LEFT JOIN users AS ju ON tj.user_id = ju.user_id
                     LEFT JOIN users AS o ON t.organizer_id = o.user_id
                     LEFT JOIN games AS g ON t.tournament_id = g.tournament_id
-                    WHERE t.tournament_id = @TournamentId;";
+                    WHERE t.tournament_id = @TournamentId";
 
-            var parameters = new { TournamentId = id };
+            var parameters = new DynamicParameters();
+            parameters.Add("TournamentId", id);
+
+            if (organizerId is not null)
+            {
+                query += " AND o.user_id = @OrganizerId";
+                parameters.Add("OrganizerId", organizerId);
+            }
+
+            if (judgeIds is not null)
+            {
+                query += " AND ju.user_id IN @JudgeIds";
+                parameters.Add("JudgeIds", judgeIds);
+            }
+
+            if (phase is not null)
+            {
+                query += " AND t.phase = @Phase";
+                parameters.Add("Phase", phase?.ToString().ToLower());
+            }
 
             await using var connection = CreateConnection();
 
