@@ -273,8 +273,9 @@ namespace TournamentSystem.Application.Services
             if (game is null)
                 throw new NotFoundException("Game not found");
 
-            if (game.StartTime > DateTime.Now)
-                throw new ValidationException("The game has not started yet.");
+            // Para produccion tengo que descomentar
+            //if (game.StartTime > DateTime.Now)
+            //    throw new ValidationException("The game has not started yet.");
 
             if (game.Player1Id != winnerId && game.Player2Id != winnerId)
                 throw new ValidationException("The winner is not a player in this game.");
@@ -306,7 +307,67 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
         }
 
+        public async Task<bool> AdvanceTournamentRoundAsync(int tournamentId, int judgeId)
+        {
+            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId);
+
+            if (tournament == null)
+                throw new NotFoundException("Tournament not found");
+
+            if (tournament.Phase != TournamentPhase.Tournament)
+                throw new ValidationException("The tournament is not in the tournament phase.");
+
+            if (!tournament.Judges.Exists(j => j.UserId == judgeId))
+                throw new ValidationException("The judge is not assigned to this tournament.");
+
+            var unfinishedGamesCount = tournament.Games.Count(g => g.WinnerId == null && g.Player1Id != null && g.Player2Id != null);
+
+            if (unfinishedGamesCount > 1)
+                throw new ValidationException("There are games without winners");
+
+            if (unfinishedGamesCount == 1 || unfinishedGamesCount == 0)
+                throw new ValidationException("The tournament is already in the final round, cannot advance.");
+
+            var nextRoundGames = SetPlayersForNextRound(tournament);
+
+            return await _tournamentRepository.AdvanceWinnersToNextRoundAsync(nextRoundGames);
+        }
+
+        private static List<Game> SetPlayersForNextRound(Tournament tournament)
+        {
+            var remainingGames = tournament.Games.Count(g => g.WinnerId == null);
+            var totalRounds = (int)Math.Log2(tournament.Players.Count);
+            var currentRound = totalRounds - (int)Math.Log2(remainingGames) - 1;
+
+            var previousRoundWinners = tournament.Games
+                .Select((game, index) => new { Game = game, GameNumber = tournament.Games.Count - index })
+                .Where(g => CalculateGameRound(totalRounds, g.GameNumber) == currentRound)
+                .Select(g => g.Game.WinnerId)
+                .ToList();
+
+            var nextRoundGames = tournament.Games
+                .Select((game, index) => new { Game = game, GameNumber = tournament.Games.Count - index })
+                .Where(g => CalculateGameRound(totalRounds, g.GameNumber) == currentRound + 1)
+                .Select(g => g.Game)
+                .ToList();
+
+            for (var i = 0; i < nextRoundGames.Count; i++)
+            {
+                var game = nextRoundGames[i];
+
+                game.Player1Id = previousRoundWinners[2 * i];
+                game.Player2Id = previousRoundWinners[2 * i + 1];
+            }
+
+            return nextRoundGames;
+        }
+
         // Metodos privados para calculos
+        private static int CalculateGameRound(int totalRounds, int gameNumber)
+        {
+            return totalRounds - (int)Math.Log2(gameNumber);
+        }
+
         private static TimeSpan CalculateTimePerDay(DateTime startDateTime, DateTime endDateTime)
         {
             var startHour = startDateTime.TimeOfDay;
@@ -357,23 +418,24 @@ namespace TournamentSystem.Application.Services
             var playableMinutesPerDay = minutesPerDay - (minutesPerDay % gameDurationInMinutes);
             var maxGamesPerDay = (int)(playableMinutesPerDay / gameDurationInMinutes);
             var totalGames = tournament.Players.Count - 1;
-            var numRounds = (int)Math.Log(tournament.Players.Count, 2);
+            var totalRounds = (int)Math.Log(tournament.Players.Count, 2);
 
             var gameDateTime = tournament.StartDateTime;
             var shuffledPlayers = tournament.Players.Select(p => p.UserId).OrderBy(x => new Random().Next()).ToList();
-            var gamesRemaining = totalGames;
+            var gameNumber = totalGames;
             var playerIndex = 0;
 
-            while (gamesRemaining > 0)
+            while (gameNumber > 0)
             {
-                for (var i = 0; i < maxGamesPerDay && gamesRemaining > 0; i++)
+                for (var i = 0; i < maxGamesPerDay && gameNumber > 0; i++)
                 {
-                    var roundNumber = numRounds - (int)Math.Log(gamesRemaining, 2);
+                    var roundNumber = totalRounds - (int)Math.Log(gameNumber, 2);
+                    roundNumber = CalculateGameRound(totalRounds, gameNumber);
 
                     var game = new Game()
                     {
                         TournamentId = tournament.TournamentId,
-                        RoundNumber = roundNumber,
+                        //RoundNumber = roundNumber,
                         StartTime = gameDateTime,
                     };
 
@@ -386,10 +448,10 @@ namespace TournamentSystem.Application.Services
 
                     games.Add(game);
                     gameDateTime = gameDateTime.AddMinutes(gameDurationInMinutes);
-                    gamesRemaining--;
+                    gameNumber--;
                 }
 
-                if (gamesRemaining > 0)
+                if (gameNumber > 0)
                 {
                     gameDateTime = gameDateTime.AddMinutes(-playableMinutesPerDay).AddDays(1);
                 }

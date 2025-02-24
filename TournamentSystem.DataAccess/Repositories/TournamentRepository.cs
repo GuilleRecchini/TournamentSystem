@@ -30,7 +30,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
                     await AddSeriesToTournamentAsync(connection, transaction, t.TournamentId, t.Series.Select(s => s.SeriesId).ToArray());
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                     return t.TournamentId;
                 }
                 catch (Exception)
@@ -108,7 +108,12 @@ namespace TournamentSystem.DataAccess.Repositories
                 parameters,
                 splitOn: "series_id, user_id,user_id,user_id,game_id");
 
-            return tournamentDictionary.Values.FirstOrDefault();
+            var result = tournamentDictionary.Values.FirstOrDefault();
+
+            if (result is not null)
+                result.Games = result.Games.OrderBy(g => g.GameId).ToList();
+
+            return result;
         }
 
         public async Task<bool> UpdateTournamentAsync(Tournament t)
@@ -180,7 +185,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
                     await connection.ExecuteAsync(addDeckCardsQuery, new { deckId, cardsIds }, transaction);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                     return true;
                 }
                 catch (Exception)
@@ -230,9 +235,9 @@ namespace TournamentSystem.DataAccess.Repositories
 
             const string addGamesQuery = @"
                 INSERT INTO games
-                    (tournament_id, round_number, start_time, player1_id, player2_id)
+                    (tournament_id, start_time, player1_id, player2_id)
                 VALUES
-                    (@TournamentId, @RoundNumber, @StartTime, @Player1Id, @Player2Id)";
+                    (@TournamentId, @StartTime, @Player1Id, @Player2Id)";
 
             await using var connection = CreateConnection();
             await connection.OpenAsync();
@@ -244,7 +249,7 @@ namespace TournamentSystem.DataAccess.Repositories
 
                     await connection.ExecuteAsync(addGamesQuery, games, transaction);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                     return true;
                 }
                 catch (Exception)
@@ -253,7 +258,6 @@ namespace TournamentSystem.DataAccess.Repositories
                     throw;
                 }
             }
-            throw new NotImplementedException();
         }
 
         public async Task<bool> SetGameWinnerAsync(int gameId, int winnerId)
@@ -269,7 +273,6 @@ namespace TournamentSystem.DataAccess.Repositories
             await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
 
-            throw new NotImplementedException();
         }
 
         public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int disqualifiedBy)
@@ -286,6 +289,32 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters) > 0;
 
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> AdvanceWinnersToNextRoundAsync(List<Game> games)
+        {
+            const string query = @"
+                UPDATE Games
+                SET 
+                    player1_id = @Player1Id,
+                    player2_id = @Player2Id
+                WHERE game_id = @GameId;";
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            {
+                await using var transaction = await connection.BeginTransactionAsync();
+                try
+                {
+                    await connection.ExecuteAsync(query, games, transaction);
+                    await transaction.CommitAsync();
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
         }
     }
 }

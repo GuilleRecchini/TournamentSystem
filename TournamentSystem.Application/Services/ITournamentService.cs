@@ -14,5 +14,6 @@ namespace TournamentSystem.Application.Services
         Task<bool> FinalizeRegistrationAsync(int tournamentId, int organizerId);
         Task<bool> SetGameWinnerAsync(int tournamentId, int gameId, int judgeId, int winnerId);
         Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int judgeId);
+        Task<bool> AdvanceTournamentRoundAsync(int tournamentId, int judgeId);
     }
 }

@@ -14,5 +14,6 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<bool> FinalizeRegistrationAndStartTournamentAsync(int tournamentId, List<Game> games);
         Task<bool> SetGameWinnerAsync(int gameId, int winnerId);
         Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int disqualifiedBy);
+        Task<bool> AdvanceWinnersToNextRoundAsync(List<Game> games);
     }
 }
