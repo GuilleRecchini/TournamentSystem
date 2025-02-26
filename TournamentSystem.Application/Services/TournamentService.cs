@@ -189,7 +189,12 @@ namespace TournamentSystem.Application.Services
             if (!allCardsValid)
                 throw new ValidationException("One or more cards are not from the tournament series.");
 
-            return await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
+            var result = await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
+
+            if (result && currentPlayers + 1 == maxPlayers)
+                await _tournamentRepository.FinalizeRegistrationAndStartTournamentAsync(tournamentId, ScheduleGames(tournament));
+
+            return result;
         }
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)
@@ -262,7 +267,20 @@ namespace TournamentSystem.Application.Services
             if (game.WinnerId != null)
                 throw new ValidationException("Game already has a winner.");
 
-            return await _tournamentRepository.SetGameWinnerAsync(gameId, winnerId);
+            var result = await _tournamentRepository.SetGameWinnerAsync(gameId, winnerId);
+            game.WinnerId = winnerId;
+
+            if (tournament.Games.All(g => g.WinnerId != null))
+                return await _tournamentRepository.FinalizeTournamentAsync(tournamentId);
+
+            var hasUnfinishedGames = tournament.Games.Any(g => g.WinnerId == null && g.Player1Id != null && g.Player2Id != null);
+            if (!hasUnfinishedGames)
+            {
+                var nextRoundGames = SetPlayersForNextRound(tournament);
+                return await _tournamentRepository.AdvanceWinnersToNextRoundAsync(nextRoundGames);
+            }
+
+            return result;
         }
 
         public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int judgeId)
@@ -280,26 +298,7 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
         }
 
-        public async Task<bool> AdvanceTournamentRoundAsync(int tournamentId, int judgeId)
-        {
-            var tournament = await _tournamentRepository.GetTournamentByIdAsync(tournamentId, null, [judgeId], TournamentPhase.Tournament);
-
-            if (tournament == null)
-                throw new NotFoundException("Tournament not found");
-
-            var unfinishedGamesCount = tournament.Games.Count(g => g.WinnerId == null && g.Player1Id != null && g.Player2Id != null);
-
-            if (unfinishedGamesCount > 1)
-                throw new ValidationException("There are games without winners");
-
-            if (unfinishedGamesCount == 1 || unfinishedGamesCount == 0)
-                throw new ValidationException("The tournament is already in the final round, cannot advance.");
-
-            var nextRoundGames = SetPlayersForNextRound(tournament);
-
-            return await _tournamentRepository.AdvanceWinnersToNextRoundAsync(nextRoundGames);
-        }
-
+        // Metodos privados
         private static List<Game> SetPlayersForNextRound(Tournament tournament)
         {
             var remainingGames = tournament.Games.Count(g => g.WinnerId == null);
@@ -329,7 +328,6 @@ namespace TournamentSystem.Application.Services
             return nextRoundGames;
         }
 
-        // Metodos privados para calculos
         private static int CalculateGameRound(int totalRounds, int gameNumber)
         {
             return totalRounds - (int)Math.Log2(gameNumber);

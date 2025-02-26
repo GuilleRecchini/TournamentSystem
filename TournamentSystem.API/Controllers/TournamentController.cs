@@ -136,16 +136,5 @@ namespace TournamentSystem.API.Controllers
 
             throw new NotImplementedException();
         }
-
-        [Authorize(Roles = nameof(UserRole.Judge))]
-        [HttpPost("{tournamentId}/advance-round")]
-        public async Task<IActionResult> AdvanceTournamentRoundAsync(int tournamentId)
-        {
-            var judgeId = ClaimsHelper.GetUserId(User);
-
-            await _tournamentService.AdvanceTournamentRoundAsync(tournamentId, judgeId);
-
-            return Ok(new { Message = "Tournament round successfully advanced." });
-        }
     }
 }

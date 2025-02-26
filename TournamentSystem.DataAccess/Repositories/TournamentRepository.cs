@@ -335,5 +335,19 @@ namespace TournamentSystem.DataAccess.Repositories
                 }
             }
         }
+
+        public async Task<bool> FinalizeTournamentAsync(int tournamentId)
+        {
+            const string query = @"
+                UPDATE Tournaments 
+                SET 
+                    phase = @Phase
+                WHERE tournament_id = @TournamentId;";
+
+            var parameters = new { Phase = nameof(TournamentPhase.Completion).ToLower(), tournamentId };
+
+            await using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, parameters) > 0;
+        }
     }
 }
