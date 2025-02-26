@@ -36,7 +36,7 @@ namespace TournamentSystem.Application.Services
             if (minutesPerDay < 30)
                 throw new ValidationException("The tournament must have at least 30 minutes per day.");
 
-            var series = await _serieRepository.GetSeriesAsync(dto.SeriesIds.ToArray());
+            var series = await _serieRepository.GetSeriesByIdsAsync(dto.SeriesIds.ToArray());
 
             if (dto.SeriesIds.Count != series.Count)
                 throw new NotFoundException("One or more series do not exist");
@@ -222,7 +222,7 @@ namespace TournamentSystem.Application.Services
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
 
-            var series = await _serieRepository.GetSeriesAsync(seriesIds);
+            var series = await _serieRepository.GetSeriesByIdsAsync(seriesIds);
 
             if (series.Count != seriesIds.Length)
                 throw new NotFoundException("One or more series do not exist");

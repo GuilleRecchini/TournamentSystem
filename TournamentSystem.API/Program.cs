@@ -89,6 +89,7 @@ builder.Services.AddScoped<ITournamentRepository, TournamentRepository>();
 builder.Services.AddScoped<ITournamentService, TournamentService>();
 
 builder.Services.AddScoped<ISerieRepository, SerieRepository>();
+builder.Services.AddScoped<ISerieService, SerieService>();
 
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
