@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TournamentSystem.API.Middlewares;
+using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Infrastructure.Configurations;
@@ -94,6 +95,8 @@ builder.Services.AddScoped<ISerieService, SerieService>();
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 builder.Services.AddTransient<GlobalExceptionHandler>();
+
+builder.Services.AddAutoMapper(typeof(TournamentMappingProfile));
 
 var app = builder.Build();
 

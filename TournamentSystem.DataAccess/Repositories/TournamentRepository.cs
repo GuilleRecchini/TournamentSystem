@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Options;
 using System.Data;
+using System.Text;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Domain.Enums;
 using TournamentSystem.Infrastructure.Configurations;
@@ -56,47 +57,57 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters, transaction);
         }
 
-        public async Task<Tournament?> GetTournamentByIdAsync(int id, int? organizerId, int[]? judgeIds, TournamentPhase? phase)
+        public async Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null)
         {
-            var query = @"
-                    SELECT t.*, s.*, p.*, ju.*, o.*,g.* FROM Tournaments t
-                    LEFT JOIN tournament_series AS ts ON t.tournament_id = ts.tournament_id
-                    LEFT JOIN series AS s ON ts.series_id = s.series_id
-                    LEFT JOIN tournament_players AS tp ON t.tournament_id = tp.tournament_id
-                    LEFT JOIN users AS p ON tp.user_id = p.user_id
-                    LEFT JOIN tournament_judges AS tj ON t.tournament_id = tj.tournament_id
-                    LEFT JOIN users AS ju ON tj.user_id = ju.user_id
-                    LEFT JOIN users AS o ON t.organizer_id = o.user_id
-                    LEFT JOIN games AS g ON t.tournament_id = g.tournament_id
-                    WHERE t.tournament_id = @TournamentId";
+            var queryBuilder = new StringBuilder(@"
+                SELECT t.*, s.*, p.*, ju.*, o.*, g.* 
+                FROM Tournaments t
+                LEFT JOIN tournament_series AS ts ON t.tournament_id = ts.tournament_id
+                LEFT JOIN series AS s ON ts.series_id = s.series_id
+                LEFT JOIN tournament_players AS tp ON t.tournament_id = tp.tournament_id
+                LEFT JOIN users AS p ON tp.user_id = p.user_id
+                LEFT JOIN tournament_judges AS tj ON t.tournament_id = tj.tournament_id
+                LEFT JOIN users AS ju ON tj.user_id = ju.user_id
+                LEFT JOIN users AS o ON t.organizer_id = o.user_id
+                LEFT JOIN games AS g ON t.tournament_id = g.tournament_id");
 
             var parameters = new DynamicParameters();
-            parameters.Add("TournamentId", id);
+            var conditions = new List<string>();
 
-            if (organizerId is not null)
+            if (id.HasValue)
             {
-                query += " AND o.user_id = @OrganizerId";
-                parameters.Add("OrganizerId", organizerId);
+                conditions.Add("t.tournament_id = @TournamentId");
+                parameters.Add("TournamentId", id.Value);
             }
 
-            if (judgeIds is not null)
+            if (organizerId.HasValue)
             {
-                query += " AND ju.user_id IN @JudgeIds";
+                conditions.Add("o.user_id = @OrganizerId");
+                parameters.Add("OrganizerId", organizerId.Value);
+            }
+
+            if (judgeIds is { Length: > 0 })
+            {
+                conditions.Add("ju.user_id IN @JudgeIds");
                 parameters.Add("JudgeIds", judgeIds);
             }
 
-            if (phase is not null)
+            if (phase.HasValue)
             {
-                query += " AND t.phase = @Phase";
-                parameters.Add("Phase", phase?.ToString().ToLower());
+                conditions.Add("t.phase = @Phase");
+                parameters.Add("Phase", phase.Value.ToString());
+            }
+
+            if (conditions.Count > 0)
+            {
+                queryBuilder.Append(" WHERE ").AppendJoin(" AND ", conditions);
             }
 
             await using var connection = CreateConnection();
-
             var tournamentDictionary = new Dictionary<int, Tournament>();
 
             var tournament = await connection.QueryAsync<Tournament, Serie, User, User, User, Game, Tournament>(
-                query,
+                queryBuilder.ToString(),
                 (t, serie, player, judge, organizer, game) =>
                 {
                     if (!tournamentDictionary.TryGetValue(t.TournamentId, out var tournamentEntry))
@@ -127,12 +138,13 @@ namespace TournamentSystem.DataAccess.Repositories
                 parameters,
                 splitOn: "series_id, user_id,user_id,user_id,game_id");
 
-            var result = tournamentDictionary.Values.FirstOrDefault();
 
-            if (result is not null)
-                result.Games = result.Games.OrderBy(g => g.GameId).ToList();
+            foreach (var tournamentEntry in tournamentDictionary.Values)
+            {
+                tournamentEntry.Games.Sort((g1, g2) => g1.GameId.CompareTo(g2.GameId));
+            }
 
-            return result;
+            return tournamentDictionary.Values.ToList();
         }
 
         public async Task<bool> UpdateTournamentAsync(Tournament t)

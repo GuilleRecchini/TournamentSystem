@@ -49,6 +49,15 @@ namespace TournamentSystem.API.Controllers
         }
 
         [Authorize]
+        [HttpGet("open-for-registration")]
+        public async Task<IActionResult> GetTournamentsOpenForRegistrationAsync()
+        {
+            var userRole = ClaimsHelper.GetUserRole(User);
+            var tournaments = await _tournamentService.GetTournamentsAsync(TournamentPhase.Registration, userRole);
+            return Ok(tournaments);
+        }
+
+        [Authorize]
         [HttpGet("{tournamentId}")]
         public async Task<IActionResult> GetTournamentByIdAsync(int tournamentId)
         {
