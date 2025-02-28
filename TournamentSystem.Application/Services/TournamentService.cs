@@ -45,6 +45,11 @@ namespace TournamentSystem.Application.Services
             if (dto.SeriesIds.Count != series.Count)
                 throw new NotFoundException("One or more series do not exist");
 
+            var judgesExists = await _userRepository.UsersExistByIdsAndRoleAsync(dto.JudgesIds.ToArray(), UserRole.Judge);
+
+            if (!judgesExists)
+                throw new NotFoundException("One or more judges do not exist");
+
             var tournament = new Tournament
             {
                 Name = dto.Name,
@@ -52,7 +57,8 @@ namespace TournamentSystem.Application.Services
                 EndDateTime = dto.EndDateTime,
                 CountryCode = dto.CountryCode,
                 OrganizerId = oganizerId,
-                Series = series
+                Series = series,
+                Judges = dto.JudgesIds.Select(j => new User { UserId = j }).ToList()
             };
 
             return await _tournamentRepository.CreateTournamentAsync(tournament);
@@ -248,8 +254,8 @@ namespace TournamentSystem.Application.Services
                 throw new NotFoundException("Tournaments not found");
 
             return userRole == UserRole.Administrator || userRole == UserRole.Organizer
-                ? _mapper.Map<IEnumerable<TournamentAdminDto>>(tournaments).Cast<BaseTournamentDto>()
-                : _mapper.Map<IEnumerable<TournamentPublicDto>>(tournaments).Cast<BaseTournamentDto>();
+                ? _mapper.Map<IEnumerable<TournamentAdminDto>>(tournaments)
+                : _mapper.Map<IEnumerable<TournamentPublicDto>>(tournaments);
         }
     }
 }

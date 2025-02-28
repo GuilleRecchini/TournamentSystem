@@ -31,6 +31,8 @@ namespace TournamentSystem.DataAccess.Repositories
 
                     await AddSeriesToTournamentAsync(connection, transaction, t.TournamentId, t.Series.Select(s => s.SeriesId).ToArray());
 
+                    await AssignJudgesToTournamentAsync(connection, transaction, t.TournamentId, t.Judges.Select(j => j.UserId).ToArray());
+
                     await transaction.CommitAsync();
                     return t.TournamentId;
                 }
@@ -54,6 +56,20 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new { tournamentId, seriesIds };
 
+            return await connection.ExecuteAsync(query, parameters, transaction);
+        }
+
+        private static async Task<int> AssignJudgesToTournamentAsync(IDbConnection connection, IDbTransaction transaction, int tournamentId, int[] judgesIds)
+        {
+            const string query = @"
+                INSERT INTO tournament_judges 
+                    (tournament_id, user_id)
+                SELECT
+                    @TournamentId, user_id
+                FROM Users
+                WHERE user_id IN @JudgesIds";
+
+            var parameters = new { tournamentId, judgesIds };
             return await connection.ExecuteAsync(query, parameters, transaction);
         }
 

@@ -1,4 +1,5 @@
 ﻿using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Enums;
 
 namespace TournamentSystem.DataAccess.Repositories
 {
@@ -10,5 +11,6 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<bool> UserExistsByEmailOrAlias(string email, string alias);
         Task<bool> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int userId);
+        Task<bool> UsersExistByIdsAndRoleAsync(int[] usersIds, UserRole userRole);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Options;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Enums;
 using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.DataAccess.Repositories
@@ -96,5 +97,20 @@ namespace TournamentSystem.DataAccess.Repositories
 
             return userCount > 0;
         }
+
+        public async Task<bool> UsersExistByIdsAndRoleAsync(int[] usersIds, UserRole userRole)
+        {
+            const string query = @"
+                    SELECT COUNT(user_id)
+                    FROM Users
+                    WHERE role = @UserRole 
+                    AND user_id IN @UsersIds;";
+
+            var parameters = new { UserRole = userRole.ToString().ToLower(), UsersIds = usersIds };
+            await using var connection = CreateConnection();
+            var userCount = await connection.QuerySingleAsync<int>(query, parameters);
+            return userCount == usersIds.Length;
+        }
+
     }
 }
