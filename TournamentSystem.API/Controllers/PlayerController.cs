@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
@@ -42,24 +43,32 @@ namespace TournamentSystem.API.Controllers
                 new { Message = UserRole.Player + " registered successfully.", UserId = userId });
         }
 
+
+        [Authorize(Roles = "Player")]
         [HttpPost("add-cards")]
         public async Task<IActionResult> AddCardsToCollectionAsync(int[] cardsIds)
         {
             if (cardsIds is null || cardsIds.Length == 0)
-                return BadRequest("The list of cards cannot be empty.");
+                return BadRequest("The list of card IDs cannot be null or empty.");
 
             var playerId = ClaimsHelper.GetUserId(User);
 
             var addedCount = await _playerService.AddCardsToCollectionAsync(cardsIds, playerId);
 
-            return Ok(new { Message = addedCount + " card(s) successfully added." });
+            var message = new StringBuilder();
+
+            if (addedCount < cardsIds.Length)
+                message.Append("Some cards were already in your collection. ");
+
+            message.Append(addedCount + " card(s) successfully added.");
+
+            return Ok(new { Message = message.ToString() });
         }
 
-        [HttpGet("cards")]
-        public async Task<IActionResult> GetCardsByPlayerIdAsyncAsync()
+        [Authorize]
+        [HttpGet("{playerId}/cards")]
+        public async Task<IActionResult> GetCardsByPlayerIdAsyncAsync(int playerId)
         {
-            var playerId = ClaimsHelper.GetUserId(User);
-
             var cards = await _playerService.GetCardsByPlayerIdAsyncAsync(playerId);
 
             return Ok(cards);

@@ -1,5 +1,6 @@
 ﻿using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Exceptions;
 
 namespace TournamentSystem.Application.Services
 {
@@ -14,12 +15,16 @@ namespace TournamentSystem.Application.Services
 
         public async Task<Card?> GetCardByIdAsync(int id)
         {
-            return await _cardRepository.GetCardByIdAsync(id);
+            var card = await _cardRepository.GetCardByIdAsync(id);
+
+            return card ?? throw new NotFoundException("Card not found");
         }
 
         public async Task<IEnumerable<Card>?> GetCardsBySerieAsync(int id)
         {
-            return await _cardRepository.GetCardsBySerieAsync(id);
+            var cards = await _cardRepository.GetCardsBySerieAsync(id);
+
+            return cards ?? throw new NotFoundException("Cards not found");
         }
     }
 }

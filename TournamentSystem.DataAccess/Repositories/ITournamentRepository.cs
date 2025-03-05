@@ -8,7 +8,7 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<int> CreateTournamentAsync(Tournament t);
         Task<bool> UpdateTournamentAsync(Tournament t);
         Task<int> AddSeriesToTournamentAsync(int tournamentId, int[] seriesId);
-        Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds);
+        Task<User> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds);
         Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId);
         Task<int> GetPlayerCountAsync(int tournamentId);
         Task<bool> FinalizeRegistrationAndStartTournamentAsync(int tournamentId, List<Game> games);

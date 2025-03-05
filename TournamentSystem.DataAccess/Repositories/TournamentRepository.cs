@@ -197,7 +197,7 @@ namespace TournamentSystem.DataAccess.Repositories
             return await AddSeriesToTournamentAsync(connection, null, tournamentId, seriesIds);
         }
 
-        public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds)
+        public async Task<User> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds)
         {
             const string registerPlayerQuery = @"
                 INSERT INTO tournament_players 
@@ -220,6 +220,11 @@ namespace TournamentSystem.DataAccess.Repositories
                 FROM cards
                 WHERE card_id IN @CardsIds;";
 
+            const string getUserQuery = @"
+                SELECT *
+                FROM users
+                WHERE user_id = @PlayerId;";
+
             await using var connection = CreateConnection();
             await connection.OpenAsync();
             {
@@ -232,8 +237,11 @@ namespace TournamentSystem.DataAccess.Repositories
 
                     await connection.ExecuteAsync(addDeckCardsQuery, new { deckId, cardsIds }, transaction);
 
+                    var player = await connection.QueryFirstAsync<User>(getUserQuery, new { playerId }, transaction);
+
                     await transaction.CommitAsync();
-                    return true;
+
+                    return player;
                 }
                 catch (Exception)
                 {

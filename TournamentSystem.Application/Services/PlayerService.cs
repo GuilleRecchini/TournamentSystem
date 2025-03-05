@@ -19,11 +19,6 @@ namespace TournamentSystem.Application.Services
 
         public async Task<int> AddCardsToCollectionAsync(int[] cardsIds, int playerId)
         {
-            var player = await _userRepository.GetUserByIdAsync(playerId);
-
-            if (player is null)
-                throw new NotFoundException("Player not found");
-
             var allCardsExist = await _cardRepository.DoAllCardsExistAsync(cardsIds);
 
             if (!allCardsExist)
@@ -39,7 +34,13 @@ namespace TournamentSystem.Application.Services
 
         public async Task<IEnumerable<Card>> GetCardsByPlayerIdAsyncAsync(int playerId)
         {
-            return await _playerRepository.GetCardsByPlayerIdAsync(playerId);
+
+            var user = await _userRepository.GetUserByIdAsync(playerId);
+
+            if (user is null || user.Role != Domain.Enums.UserRole.Player)
+                throw new NotFoundException("Player not found");
+
+            return await _cardRepository.GetCardsByPlayerIdAsync(playerId);
         }
     }
 }

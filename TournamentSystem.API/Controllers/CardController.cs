@@ -18,15 +18,6 @@ namespace TournamentSystem.API.Controllers
         public async Task<IActionResult> GetCardByIdAsync(int id)
         {
             var card = await _cardService.GetCardByIdAsync(id);
-            if (card is null)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "Card Error",
-                    Detail = "The card does not exist."
-                });
-            }
 
             return Ok(card);
         }
@@ -36,19 +27,7 @@ namespace TournamentSystem.API.Controllers
         {
             var cards = await _cardService.GetCardsBySerieAsync(serieId);
 
-            if (cards is null)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "Card Error",
-                    Detail = "The cards do not exist."
-                });
-            }
-
             return Ok(cards);
-
-            throw new NotImplementedException();
         }
     }
 }

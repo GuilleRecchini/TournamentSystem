@@ -19,7 +19,7 @@ namespace TournamentSystem.DataAccess.Repositories
             return result.FirstOrDefault();
         }
 
-        public async Task<IEnumerable<Card>> GetCardsByIdsWithSeriesAsync(int[] cardsIds)
+        public async Task<IEnumerable<Card>> GetCardsByIdsAsync(int[] cardsIds)
         {
             const string query = @"SELECT *
                                    FROM cards c
@@ -44,6 +44,19 @@ namespace TournamentSystem.DataAccess.Repositories
                                    )";
 
             return await GetCardsAsync(query, new { SeriesId = id });
+        }
+
+        public async Task<IEnumerable<Card>> GetCardsByPlayerIdAsync(int playerId)
+        {
+            const string query = @"
+                SELECT *
+                FROM cards AS c 
+                JOIN player_cards AS pc ON pc.card_id = c.card_id
+                JOIN card_series cs ON c.card_id = cs.card_id
+                JOIN series s on cs.series_id = s.series_id
+                WHERE pc.user_id = @PlayerId";
+
+            return await GetCardsAsync(query, new { PlayerId = playerId });
         }
 
         private async Task<List<Card>> GetCardsAsync(string query, object parameters)

@@ -121,19 +121,20 @@ namespace TournamentSystem.Application.Services
             if (!areCardsOwnedByPlayer)
                 throw new ValidationException("One or more cards are not owned by the player.");
 
-            var cards = await _cardRepository.GetCardsByIdsWithSeriesAsync(cardsIds);
+            var cards = await _cardRepository.GetCardsByIdsAsync(cardsIds);
             var tournamentSeries = tournament.Series.Select(s => s.SeriesId);
             var allCardsValid = cards.All(c => c.Series.Any(cs => tournamentSeries.Contains(cs.SeriesId)));
 
             if (!allCardsValid)
                 throw new ValidationException("One or more cards are not from the tournament series.");
 
-            var result = await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
+            var player = await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
+            tournament.Players.Add(player);
 
-            if (result && currentPlayers + 1 == maxPlayers)
+            if (tournament.Players.Count == maxPlayers)
                 await _tournamentRepository.FinalizeRegistrationAndStartTournamentAsync(tournamentId, ScheduleGames(tournament));
 
-            return result;
+            return true;
         }
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)

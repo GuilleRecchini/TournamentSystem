@@ -15,7 +15,10 @@ namespace TournamentSystem.DataAccess.Repositories
                 SELECT 
                     @PlayerId, card_id 
                 FROM cards
-                WHERE card_id IN @CardIds";
+                WHERE card_id IN @CardIds
+                AND NOT EXISTS (
+                    SELECT 1 FROM player_cards WHERE user_id = @PlayerId AND card_id = cards.card_id
+                )";
 
             var parameters = new { PlayerId = playerId, CardIds = cardIds };
 
