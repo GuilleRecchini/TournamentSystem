@@ -115,18 +115,7 @@ namespace TournamentSystem.Application.Services
             if (cardsIds.Length != cardsIds.Distinct().Count())
                 throw new ValidationException("The player can only register unique cards.");
 
-            var playerCards = await _playerRepository.GetCardsByPlayerIdAsync(playerId);
-            var areCardsOwnedByPlayer = cardsIds.All(cardId => playerCards.Any(c => c.CardId == cardId));
-
-            if (!areCardsOwnedByPlayer)
-                throw new ValidationException("One or more cards are not owned by the player.");
-
-            var cards = await _cardRepository.GetCardsByIdsAsync(cardsIds);
-            var tournamentSeries = tournament.Series.Select(s => s.SeriesId);
-            var allCardsValid = cards.All(c => c.Series.Any(cs => tournamentSeries.Contains(cs.SeriesId)));
-
-            if (!allCardsValid)
-                throw new ValidationException("One or more cards are not from the tournament series.");
+            await ValidatePlayerCardsAsync(playerId, cardsIds, tournament);
 
             var player = await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
             tournament.Players.Add(player);
@@ -257,6 +246,70 @@ namespace TournamentSystem.Application.Services
             return userRole == UserRole.Administrator || userRole == UserRole.Organizer
                 ? _mapper.Map<IEnumerable<TournamentAdminDto>>(tournaments)
                 : _mapper.Map<IEnumerable<TournamentPublicDto>>(tournaments);
+        }
+
+        public async Task<int> AddCardsToDeckAsync(int tournamentId, int playerId, int[] cardsIds)
+        {
+            var deck = await _tournamentRepository.GetPlayerDeckByTournamentIdAsync(tournamentId, playerId);
+
+            if (deck is null)
+                throw new NotFoundException("Player deck not found");
+
+            if (deck.Tournament.StartDateTime - DateTime.Now <= TimeSpan.FromDays(1))
+                throw new ValidationException("The player can only add cards to the deck at least 1 day before the tournament starts.");
+
+            if (deck.Cards.Count + cardsIds.Length > 15)
+                throw new ValidationException("The player can only have up to 15 cards in the deck.");
+
+            await ValidatePlayerCardsAsync(playerId, cardsIds, deck.Tournament);
+            return await _tournamentRepository.AddCardsToDeckAsync(deck.DeckId, cardsIds);
+        }
+
+        public async Task<int> RemoveCardsFromDeckAsync(int tournamentId, int playerId, int[] cardsIds)
+        {
+            var deck = await _tournamentRepository.GetPlayerDeckByTournamentIdAsync(tournamentId, playerId);
+            if (deck is null)
+                throw new NotFoundException("Player deck not found");
+
+            if (deck.Tournament.StartDateTime - DateTime.Now <= TimeSpan.FromDays(1))
+                throw new ValidationException("The player can only remove cards from the deck at least 1 day before the tournament starts.");
+
+            return await _tournamentRepository.RemoveCardsFromDeckAsync(deck.DeckId, cardsIds);
+        }
+
+
+        private async Task ValidatePlayerCardsAsync(int playerId, int[] cardsIds, Tournament tournament)
+        {
+            var playerCards = await _playerRepository.GetCardsByPlayerIdAsync(playerId);
+            var areCardsOwnedByPlayer = cardsIds.All(cardId => playerCards.Any(c => c.CardId == cardId));
+
+            if (!areCardsOwnedByPlayer)
+                throw new ValidationException("One or more cards are not owned by the player.");
+
+            var cards = await _cardRepository.GetCardsByIdsAsync(cardsIds);
+            var tournamentSeries = tournament.Series.Select(s => s.SeriesId);
+            var allCardsValid = cards.All(c => c.Series.Any(cs => tournamentSeries.Contains(cs.SeriesId)));
+
+            if (!allCardsValid)
+                throw new ValidationException("One or more cards are not from the tournament series.");
+        }
+
+        public async Task<DeckDto> GetDeckAsync(int playerId, int tournamentId)
+        {
+            var deck = await _tournamentRepository.GetPlayerDeckByTournamentIdAsync(tournamentId, playerId);
+
+            return new DeckDto
+            {
+                DeckId = deck.DeckId,
+                PlayerId = playerId,
+                TournamentId = tournamentId,
+                Cards = deck.Cards.ConvertAll(c => new Card
+                {
+                    CardId = c.CardId,
+                    Name = c.Name,
+                    Series = c.Series
+                })
+            };
         }
     }
 }

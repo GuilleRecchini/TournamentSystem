@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Helpers;
 using TournamentSystem.Application.Services;
@@ -144,6 +145,53 @@ namespace TournamentSystem.API.Controllers
             return Ok(new { Message = "Player successfully disqualified." });
 
             throw new NotImplementedException();
+        }
+
+        [Authorize(Roles = nameof(UserRole.Player))]
+        [HttpPost("{tournamentId}/add-cards/")]
+        public async Task<IActionResult> AddCardsToDeck(int tournamentId, int[] cardsIds)
+        {
+            var playerId = ClaimsHelper.GetUserId(User);
+
+            var addedCount = await _tournamentService.AddCardsToDeckAsync(tournamentId, playerId, cardsIds);
+
+            var message = new StringBuilder();
+
+            if (addedCount < cardsIds.Length)
+                message.Append("Some of the selected cards were already in your deck. ");
+
+            message.Append($"{addedCount} card(s) successfully added to your deck.");
+
+            return Ok(new { Message = message.ToString() });
+        }
+
+        [Authorize(Roles = nameof(UserRole.Player))]
+        [HttpDelete("{tournamentId}/remove-cards/")]
+        public async Task<IActionResult> RemoveCardsFromDeck(int tournamentId, int[] cardsIds)
+        {
+            var playerId = ClaimsHelper.GetUserId(User);
+
+            var removedCount = await _tournamentService.RemoveCardsFromDeckAsync(tournamentId, playerId, cardsIds);
+
+            var message = new StringBuilder();
+
+            if (removedCount < cardsIds.Length)
+                message.Append("Some of the selected cards were not in your deck. ");
+
+            message.Append($"{removedCount} card(s) successfully removed from your deck.");
+
+            return Ok(new { Message = message.ToString() });
+        }
+
+        [Authorize(Roles = nameof(UserRole.Player))]
+        [HttpGet("{tournamentId}/get-deck/")]
+        public async Task<IActionResult> GetDeckAsync(int tournamentId)
+        {
+            var playerId = ClaimsHelper.GetUserId(User);
+
+            var deck = await _tournamentService.GetDeckAsync(playerId, tournamentId);
+
+            return Ok(deck);
         }
     }
 }

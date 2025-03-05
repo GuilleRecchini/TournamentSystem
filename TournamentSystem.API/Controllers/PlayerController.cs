@@ -58,9 +58,9 @@ namespace TournamentSystem.API.Controllers
             var message = new StringBuilder();
 
             if (addedCount < cardsIds.Length)
-                message.Append("Some cards were already in your collection. ");
+                message.Append("Some of the selected cards were already in your collection. ");
 
-            message.Append(addedCount + " card(s) successfully added.");
+            message.Append($"{addedCount} card(s) successfully added to your collection.");
 
             return Ok(new { Message = message.ToString() });
         }

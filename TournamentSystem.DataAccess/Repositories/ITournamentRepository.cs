@@ -17,5 +17,8 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<bool> AdvanceWinnersToNextRoundAsync(List<Game> games);
         Task<bool> FinalizeTournamentAsync(int tournamentId);
         Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null);
+        Task<Deck> GetPlayerDeckByTournamentIdAsync(int tournamentId, int playerId);
+        Task<int> AddCardsToDeckAsync(int deckId, int[] cardsIds);
+        Task<int> RemoveCardsFromDeckAsync(int deckId, int[] cardsIds);
     }
 }

@@ -15,5 +15,8 @@ namespace TournamentSystem.Application.Services
         Task<bool> SetGameWinnerAsync(int tournamentId, int gameId, int judgeId, int winnerId);
         Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int judgeId);
         Task<IEnumerable<BaseTournamentDto>> GetTournamentsAsync(TournamentPhase registration, UserRole userRole);
+        Task<int> AddCardsToDeckAsync(int tournamentId, int playerId, int[] cardsIds);
+        Task<int> RemoveCardsFromDeckAsync(int tournamentId, int playerId, int[] cardsIds);
+        Task<DeckDto> GetDeckAsync(int playerId, int tournamentId);
     }
 }
