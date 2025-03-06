@@ -10,14 +10,16 @@ namespace TournamentSystem.Domain.Entities
         public DateTime EndDateTime { get; set; }
         public string CountryCode { get; set; }
         public TournamentPhase Phase { get; set; }
-        public int? Winner { get; set; }
+        public int? WinnerId { get; set; }
         public int? OrganizerId { get; set; }
+        public bool IsCanceled { get; set; }
 
         //Navigation properties
         public List<Serie> Series { get; set; }
         public List<User> Players { get; set; }
         public List<User> Judges { get; set; }
         public User Organizer { get; set; }
+        public User Winner { get; set; }
         public List<Game> Games { get; set; }
     }
 }

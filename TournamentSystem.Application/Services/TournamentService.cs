@@ -66,7 +66,7 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> UpdateTournamentAsync(TournamentUpdateDto dto)
         {
-            var existingTournament = (await _tournamentRepository.GetTournamentsAsync(dto.TournamentId)).FirstOrDefault();
+            var existingTournament = (await _tournamentRepository.GetTournamentsAsync(dto.TournamentId, isCanceled: false)).FirstOrDefault();
 
             if (existingTournament is null)
                 throw new NotFoundException("Tournament not found");
@@ -75,7 +75,7 @@ namespace TournamentSystem.Application.Services
             existingTournament.StartDateTime = dto.StartDateTime ?? existingTournament.StartDateTime;
             existingTournament.EndDateTime = dto.EndDateTime ?? existingTournament.EndDateTime;
             existingTournament.CountryCode = dto.CountryCode ?? existingTournament.CountryCode;
-            existingTournament.Winner = dto.Winner ?? existingTournament.Winner;
+            existingTournament.WinnerId = dto.Winner ?? existingTournament.WinnerId;
             existingTournament.OrganizerId = dto.OrganizerId ?? existingTournament.OrganizerId;
 
             return await _tournamentRepository.UpdateTournamentAsync(existingTournament);
@@ -95,10 +95,13 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> RegisterPlayerAsync(int tournamentId, int playerId, int[] cardsIds)
         {
-            var tournament = (await _tournamentRepository.GetTournamentsAsync(id: tournamentId, phase: TournamentPhase.Registration)).FirstOrDefault();
+            var tournament = (await _tournamentRepository.GetTournamentsAsync(id: tournamentId, phase: TournamentPhase.Registration, isCanceled: false)).FirstOrDefault();
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
+
+            if (tournament.IsCanceled)
+                throw new ValidationException("The tournament is canceled and cannot be registered for.");
 
             if (tournament.Players.Exists(p => p.UserId == playerId))
                 throw new ValidationException("The player is already registered for the tournament.");
@@ -128,7 +131,7 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> AssignJudgeToTournamentAsync(int tournamentId, int judgeId, int organizerId)
         {
-            var tournament = (await _tournamentRepository.GetTournamentsAsync(id: tournamentId, organizerId: organizerId)).FirstOrDefault();
+            var tournament = (await _tournamentRepository.GetTournamentsAsync(id: tournamentId, organizerId: organizerId, isCanceled: false)).FirstOrDefault();
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
@@ -146,7 +149,7 @@ namespace TournamentSystem.Application.Services
 
         public async Task<bool> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds, int organizerId)
         {
-            var tournament = (await _tournamentRepository.GetTournamentsAsync(tournamentId)).FirstOrDefault();
+            var tournament = (await _tournamentRepository.GetTournamentsAsync(tournamentId, isCanceled: false)).FirstOrDefault();
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
@@ -167,7 +170,8 @@ namespace TournamentSystem.Application.Services
             var tournament = (await _tournamentRepository.GetTournamentsAsync(
                 id: tournamentId,
                 organizerId: organizerId,
-                phase: TournamentPhase.Registration)).FirstOrDefault();
+                phase: TournamentPhase.Registration,
+                isCanceled: false)).FirstOrDefault();
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
@@ -182,7 +186,8 @@ namespace TournamentSystem.Application.Services
             var tournament = (await _tournamentRepository.GetTournamentsAsync(
                 id: tournamentId,
                 judgeIds: [judgeId],
-                phase: TournamentPhase.Tournament)).FirstOrDefault();
+                phase: TournamentPhase.Tournament,
+                isCanceled: false)).FirstOrDefault();
 
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
@@ -223,7 +228,8 @@ namespace TournamentSystem.Application.Services
             var tournament = (await _tournamentRepository.GetTournamentsAsync(
                 id: tournamentId,
                 judgeIds: [judgeId],
-                phase: TournamentPhase.Tournament)).FirstOrDefault();
+                phase: TournamentPhase.Tournament,
+                 isCanceled: false)).FirstOrDefault();
 
             if (tournament == null)
                 throw new NotFoundException("Tournament not found");
@@ -236,9 +242,14 @@ namespace TournamentSystem.Application.Services
             return await _tournamentRepository.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
         }
 
-        public async Task<IEnumerable<BaseTournamentDto>> GetTournamentsAsync(TournamentPhase phase, UserRole userRole)
+        public async Task<IEnumerable<BaseTournamentDto>> GetTournamentsAsync(TournamentPhase? phase, UserRole? userRole)
         {
-            var tournaments = await _tournamentRepository.GetTournamentsAsync(phase: phase);
+            IEnumerable<Tournament> tournaments;
+
+            if (phase is not null)
+                tournaments = await _tournamentRepository.GetTournamentsAsync(phase: phase);
+            else
+                tournaments = await _tournamentRepository.GetTournamentsAsync();
 
             if (tournaments is null)
                 throw new NotFoundException("Tournaments not found");
@@ -310,6 +321,20 @@ namespace TournamentSystem.Application.Services
                     Series = c.Series
                 })
             };
+        }
+
+        public async Task<bool> CancelTournamentAsync(int tournamentId, int userId, UserRole userRole)
+        {
+            var tournament = (await _tournamentRepository.GetTournamentsAsync(tournamentId, isCanceled: false)).FirstOrDefault();
+
+            if (tournament is null)
+                throw new NotFoundException("Tournament not found");
+
+            if (userRole == UserRole.Organizer && tournament.OrganizerId != userId)
+                throw new ValidationException("You are not the organizer of this tournament.");
+
+            return await _tournamentRepository.CancelTournamentAsync(tournamentId);
+
         }
     }
 }

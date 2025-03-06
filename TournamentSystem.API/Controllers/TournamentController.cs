@@ -193,5 +193,27 @@ namespace TournamentSystem.API.Controllers
 
             return Ok(deck);
         }
+
+        [Authorize(Roles = nameof(UserRole.Administrator))]
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAllTournamentsAsync()
+        {
+            var userRole = ClaimsHelper.GetUserRole(User);
+
+            var tournaments = await _tournamentService.GetTournamentsAsync(userRole: userRole);
+            return Ok(tournaments);
+        }
+
+        [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Organizer)}")]
+        [HttpPost("{tournamentId}/cancel")]
+        public async Task<IActionResult> CancelTournamentAsync(int tournamentId)
+        {
+            var userId = ClaimsHelper.GetUserId(User);
+            var userRole = ClaimsHelper.GetUserRole(User);
+
+            await _tournamentService.CancelTournamentAsync(tournamentId, userId, userRole);
+            return Ok(new { Message = "Tournament successfully canceled." });
+        }
+
     }
 }

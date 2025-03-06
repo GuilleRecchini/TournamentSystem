@@ -73,15 +73,16 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters, transaction);
         }
 
-        public async Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null)
+        public async Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null, bool? isCanceled = null)
         {
             var queryBuilder = new StringBuilder(@"
-                SELECT t.*, s.*, p.*, ju.*, o.*, g.* 
+                SELECT t.*, s.*, p.*, w.*, ju.*, o.*, g.* 
                 FROM Tournaments t
                 LEFT JOIN tournament_series AS ts ON t.tournament_id = ts.tournament_id
                 LEFT JOIN series AS s ON ts.series_id = s.series_id
                 LEFT JOIN tournament_players AS tp ON t.tournament_id = tp.tournament_id
                 LEFT JOIN users AS p ON tp.user_id = p.user_id
+                LEFT JOIN users AS w ON t.winner_id = w.user_id
                 LEFT JOIN tournament_judges AS tj ON t.tournament_id = tj.tournament_id
                 LEFT JOIN users AS ju ON tj.user_id = ju.user_id
                 LEFT JOIN users AS o ON t.organizer_id = o.user_id
@@ -89,6 +90,12 @@ namespace TournamentSystem.DataAccess.Repositories
 
             var parameters = new DynamicParameters();
             var conditions = new List<string>();
+
+            if (isCanceled is not null)
+            {
+                conditions.Add("t.is_canceled = @IsCanceled");
+                parameters.Add("IsCanceled", isCanceled.Value);
+            }
 
             if (id.HasValue)
             {
@@ -122,15 +129,16 @@ namespace TournamentSystem.DataAccess.Repositories
             await using var connection = CreateConnection();
             var tournamentDictionary = new Dictionary<int, Tournament>();
 
-            var tournament = await connection.QueryAsync<Tournament, Serie, User, User, User, Game, Tournament>(
+            var tournament = await connection.QueryAsync<Tournament, Serie, User, User, User, User, Game, Tournament>(
                 queryBuilder.ToString(),
-                (t, serie, player, judge, organizer, game) =>
+                (t, serie, player, winner, judge, organizer, game) =>
                 {
                     if (!tournamentDictionary.TryGetValue(t.TournamentId, out var tournamentEntry))
                     {
                         tournamentEntry = t;
                         tournamentEntry.Series = [];
                         tournamentEntry.Players = [];
+                        tournamentEntry.Winner = winner;
                         tournamentEntry.Judges = [];
                         tournamentEntry.Organizer = organizer;
                         tournamentEntry.Games = [];
@@ -152,7 +160,7 @@ namespace TournamentSystem.DataAccess.Repositories
                     return tournamentEntry;
                 },
                 parameters,
-                splitOn: "series_id, user_id,user_id,user_id,game_id");
+                splitOn: "series_id, user_id,user_id,user_id,user_id,game_id");
 
 
             foreach (var tournamentEntry in tournamentDictionary.Values)
@@ -182,7 +190,7 @@ namespace TournamentSystem.DataAccess.Repositories
                 t.StartDateTime,
                 t.EndDateTime,
                 t.CountryCode,
-                t.Winner,
+                t.WinnerId,
                 t.OrganizerId,
                 t.TournamentId
             };
@@ -386,7 +394,7 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
 
-        public async Task<Deck> GetPlayerDeckByTournamentIdAsync(int tournamentId, int playerId)
+        public async Task<Deck?> GetPlayerDeckByTournamentIdAsync(int tournamentId, int playerId)
         {
             const string query = @"
                 SELECT d.*, t.*, s.*, c.*, s2.*
@@ -399,7 +407,8 @@ namespace TournamentSystem.DataAccess.Repositories
                 JOIN card_series cs ON c.card_id = cs.card_id
                 JOIN series s2 ON cs.series_id = s2.series_id
                 WHERE d.user_id = @PlayerId 
-                AND d.tournament_id = @TournamentId;";
+                AND d.tournament_id = @TournamentId
+                AND t.is_canceled = 0;";
 
             await using var connection = CreateConnection();
             var deckDictionary = new Dictionary<int, Deck>();
@@ -436,9 +445,10 @@ namespace TournamentSystem.DataAccess.Repositories
                     return deckEntry;
                 },
                 new { PlayerId = playerId, TournamentId = tournamentId },
-                splitOn: "tournament_id, series_id, card_id,series_id")).First();
+                splitOn: "tournament_id, series_id, card_id,series_id")).FirstOrDefault();
 
-            deck.Cards.AddRange(cardDictionary.Values);
+            if (deck is not null)
+                deck.Cards.AddRange(cardDictionary.Values);
 
             return deck;
         }
@@ -469,6 +479,18 @@ namespace TournamentSystem.DataAccess.Repositories
 
             await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, new { deckId, cardsIds });
+        }
+
+        public async Task<bool> CancelTournamentAsync(int tournamentId)
+        {
+            const string query = @"
+                UPDATE Tournaments 
+                SET 
+                    is_canceled = 1
+                WHERE tournament_id = @TournamentId;";
+
+            await using var connection = CreateConnection();
+            return await connection.ExecuteAsync(query, new { TournamentId = tournamentId }) > 0;
         }
     }
 }

@@ -5,5 +5,6 @@
         public List<BaseUserDto> Players { get; set; }
         public List<BaseUserDto> Judges { get; set; }
         public BaseUserDto Organizer { get; set; }
+        public BaseUserDto Winner { get; set; }
     }
 }

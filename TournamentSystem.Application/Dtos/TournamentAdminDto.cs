@@ -11,5 +11,6 @@ namespace TournamentSystem.Application.Dtos
         public List<UserForAdminsDto> Players { get; set; }
         public List<UserForAdminsDto> Judges { get; set; }
         public UserForAdminsDto Organizer { get; set; }
+        public UserForAdminsDto Winner { get; set; }
     }
 }

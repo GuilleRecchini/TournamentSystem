@@ -9,8 +9,8 @@ namespace TournamentSystem.Application.Dtos
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
         public string CountryCode { get; set; }
-        public int? Winner { get; set; }
         public int MaxPlayers { get; set; }
+        public bool IsCanceled { get; set; }
 
         //Navigation properties
         public List<Serie> Series { get; set; }
