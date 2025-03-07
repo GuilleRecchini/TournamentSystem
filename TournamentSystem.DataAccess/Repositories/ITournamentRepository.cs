@@ -21,5 +21,6 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<int> AddCardsToDeckAsync(int deckId, int[] cardsIds);
         Task<int> RemoveCardsFromDeckAsync(int deckId, int[] cardsIds);
         Task<bool> CancelTournamentAsync(int tournamentId);
+        Task<IEnumerable<Deck>> GetTournamentDecksAsync(int tournamentId);
     }
 }

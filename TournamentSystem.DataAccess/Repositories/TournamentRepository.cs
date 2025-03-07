@@ -393,36 +393,54 @@ namespace TournamentSystem.DataAccess.Repositories
             await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
-
         public async Task<Deck?> GetPlayerDeckByTournamentIdAsync(int tournamentId, int playerId)
         {
-            const string query = @"
-                SELECT d.*, t.*, s.*, c.*, s2.*
+            return (await GetDecksByTournamentIdAsync(tournamentId, playerId)).FirstOrDefault();
+        }
+
+        public async Task<IEnumerable<Deck>> GetTournamentDecksAsync(int tournamentId)
+        {
+            return await GetDecksByTournamentIdAsync(tournamentId);
+        }
+
+        private async Task<IEnumerable<Deck>> GetDecksByTournamentIdAsync(int tournamentId, int? playerId = null)
+        {
+            var query = @"
+                SELECT d.*, t.*, s.*,u.*, c.*, s2.*
                 FROM decks d
                 JOIN tournaments t ON d.tournament_id = t.tournament_id
                 JOIN tournament_series ts ON t.tournament_id = ts.tournament_id 
                 JOIN series s ON ts.series_id = s.series_id
+                JOIN users u ON d.user_id = u.user_id
                 JOIN deck_cards dc ON d.deck_id = dc.deck_id
                 JOIN cards c ON dc.card_id = c.card_id
                 JOIN card_series cs ON c.card_id = cs.card_id
                 JOIN series s2 ON cs.series_id = s2.series_id
-                WHERE d.user_id = @PlayerId 
-                AND d.tournament_id = @TournamentId
-                AND t.is_canceled = 0;";
+                WHERE d.tournament_id = @TournamentId
+                AND t.is_canceled = 0";
+
+            var parameters = new DynamicParameters();
+
+            if (playerId.HasValue)
+            {
+                query += " AND d.user_id = @PlayerId";
+                parameters.Add("PlayerId", playerId.Value);
+            }
 
             await using var connection = CreateConnection();
             var deckDictionary = new Dictionary<int, Deck>();
             var cardDictionary = new Dictionary<int, Card>();
 
-            var deck = (await connection.QueryAsync<Deck, Tournament, Serie, Card, Serie, Deck>(
+            var decks = await connection.QueryAsync<Deck, Tournament, Serie, User, Card, Serie, Deck>(
                 query,
-                (d, t, s, c, s2) =>
+                (d, t, s, u, c, s2) =>
                 {
                     if (!deckDictionary.TryGetValue(d.DeckId, out var deckEntry))
                     {
                         deckEntry = d;
                         deckEntry.Tournament = t;
                         deckEntry.Tournament.Series = [];
+                        deckEntry.Player = u;
                         deckEntry.Cards = [];
                         deckDictionary.Add(deckEntry.DeckId, deckEntry);
                     }
@@ -440,17 +458,17 @@ namespace TournamentSystem.DataAccess.Repositories
 
                         if (s2 is not null && !cardEntry.Series.Any(serie => serie.SeriesId == s2.SeriesId))
                             cardEntry.Series.Add(s2);
+
+                        if (!deckEntry.Cards.Any(card => card.CardId == cardEntry.CardId))
+                            deckEntry.Cards.Add(cardEntry);
                     }
 
                     return deckEntry;
                 },
                 new { PlayerId = playerId, TournamentId = tournamentId },
-                splitOn: "tournament_id, series_id, card_id,series_id")).FirstOrDefault();
+                splitOn: "tournament_id, series_id,user_id, card_id, series_id");
 
-            if (deck is not null)
-                deck.Cards.AddRange(cardDictionary.Values);
-
-            return deck;
+            return deckDictionary.Values;
         }
 
         public async Task<int> AddCardsToDeckAsync(int deckId, int[] cardsIds)

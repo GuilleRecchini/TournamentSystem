@@ -323,6 +323,24 @@ namespace TournamentSystem.Application.Services
             };
         }
 
+        public async Task<IEnumerable<DeckDto>> GetTournamentDecksAsyncAsync(int tournamentId)
+        {
+            var decks = await _tournamentRepository.GetTournamentDecksAsync(tournamentId);
+
+            return decks.Select(d => new DeckDto
+            {
+                DeckId = d.DeckId,
+                PlayerId = d.Player.UserId,
+                TournamentId = d.Tournament.TournamentId,
+                Cards = d.Cards.ConvertAll(c => new Card
+                {
+                    CardId = c.CardId,
+                    Name = c.Name,
+                    Series = c.Series
+                })
+            });
+        }
+
         public async Task<bool> CancelTournamentAsync(int tournamentId, int userId, UserRole userRole)
         {
             var tournament = (await _tournamentRepository.GetTournamentsAsync(tournamentId, isCanceled: false)).FirstOrDefault();

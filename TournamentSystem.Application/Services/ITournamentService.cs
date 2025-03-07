@@ -19,5 +19,6 @@ namespace TournamentSystem.Application.Services
         Task<int> RemoveCardsFromDeckAsync(int tournamentId, int playerId, int[] cardsIds);
         Task<DeckDto> GetDeckAsync(int playerId, int tournamentId);
         Task<bool> CancelTournamentAsync(int tournamentId, int userId, UserRole userRole);
+        Task<IEnumerable<DeckDto>> GetTournamentDecksAsyncAsync(int tournamentId);
     }
 }

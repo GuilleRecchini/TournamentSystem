@@ -195,6 +195,17 @@ namespace TournamentSystem.API.Controllers
         }
 
         [Authorize(Roles = nameof(UserRole.Administrator))]
+        [HttpGet("{tournamentId}/get-all-decks/")]
+        public async Task<IActionResult> GetAllDecksAsync(int tournamentId)
+        {
+
+            var decks = await _tournamentService.GetTournamentDecksAsyncAsync(tournamentId);
+
+            return Ok(decks);
+        }
+
+
+        [Authorize(Roles = nameof(UserRole.Administrator))]
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAllTournamentsAsync()
         {
