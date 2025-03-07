@@ -54,7 +54,7 @@ namespace TournamentSystem.API.Controllers
         public async Task<IActionResult> GetTournamentsOpenForRegistrationAsync()
         {
             var userRole = ClaimsHelper.GetUserRole(User);
-            var tournaments = await _tournamentService.GetTournamentsAsync(TournamentPhase.Registration, userRole);
+            var tournaments = await _tournamentService.GetTournamentsByPhaseAsync(TournamentPhase.Registration, userRole);
             return Ok(tournaments);
         }
 

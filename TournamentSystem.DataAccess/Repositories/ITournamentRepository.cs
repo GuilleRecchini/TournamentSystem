@@ -1,5 +1,5 @@
-﻿using TournamentSystem.Domain.Entities;
-using TournamentSystem.Domain.Enums;
+﻿using TournamentSystem.Application.Dtos;
+using TournamentSystem.Domain.Entities;
 
 namespace TournamentSystem.DataAccess.Repositories
 {
@@ -16,7 +16,9 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int disqualifiedBy);
         Task<bool> AdvanceWinnersToNextRoundAsync(List<Game> games);
         Task<bool> FinalizeTournamentAsync(int tournamentId);
-        Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null, bool? isCanceled = null);
+        //Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null, bool? isCanceled = null);
+        Task<IEnumerable<Tournament>> GetTournamentsAsync(TournamentsFilter? filter = null);
+        Task<Tournament?> GetTournamentByIdAsync(int tournamnetId, TournamentsFilter? filter = null);
         Task<Deck?> GetPlayerDeckByTournamentIdAsync(int tournamentId, int playerId);
         Task<int> AddCardsToDeckAsync(int deckId, int[] cardsIds);
         Task<int> RemoveCardsFromDeckAsync(int deckId, int[] cardsIds);

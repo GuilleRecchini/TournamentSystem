@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using System.Data;
 using System.Text;
+using TournamentSystem.Application.Dtos;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Domain.Enums;
 using TournamentSystem.Infrastructure.Configurations;
@@ -73,7 +74,17 @@ namespace TournamentSystem.DataAccess.Repositories
             return await connection.ExecuteAsync(query, parameters, transaction);
         }
 
-        public async Task<IEnumerable<Tournament>> GetTournamentsAsync(int? id = null, int? organizerId = null, int[]? judgeIds = null, TournamentPhase? phase = null, bool? isCanceled = null)
+        public async Task<Tournament?> GetTournamentByIdAsync(int tournamnetId, TournamentsFilter? filter)
+        {
+            return (await GetAllTournamentsAsync(filter, tournamnetId)).FirstOrDefault();
+        }
+
+        public async Task<IEnumerable<Tournament>> GetTournamentsAsync(TournamentsFilter? filter)
+        {
+            return await GetAllTournamentsAsync(filter);
+        }
+
+        private async Task<IEnumerable<Tournament>> GetAllTournamentsAsync(TournamentsFilter? filter = null, int? tournamnetId = null)
         {
             var queryBuilder = new StringBuilder(@"
                 SELECT t.*, s.*, p.*, w.*, ju.*, o.*, g.* 
@@ -91,34 +102,36 @@ namespace TournamentSystem.DataAccess.Repositories
             var parameters = new DynamicParameters();
             var conditions = new List<string>();
 
-            if (isCanceled is not null)
-            {
-                conditions.Add("t.is_canceled = @IsCanceled");
-                parameters.Add("IsCanceled", isCanceled.Value);
-            }
+            filter ??= new TournamentsFilter();
 
-            if (id.HasValue)
+            if (tournamnetId is not null)
             {
                 conditions.Add("t.tournament_id = @TournamentId");
-                parameters.Add("TournamentId", id.Value);
+                parameters.Add("TournamentId", tournamnetId);
             }
 
-            if (organizerId.HasValue)
+            if (filter.IsCanceled is not null)
+            {
+                conditions.Add("t.is_canceled = @IsCanceled");
+                parameters.Add("IsCanceled", filter.IsCanceled);
+            }
+
+            if (filter.OrganizerId is not null)
             {
                 conditions.Add("o.user_id = @OrganizerId");
-                parameters.Add("OrganizerId", organizerId.Value);
+                parameters.Add("OrganizerId", filter.OrganizerId);
             }
 
-            if (judgeIds is { Length: > 0 })
+            if (filter.JudgeIds is not null)
             {
                 conditions.Add("ju.user_id IN @JudgeIds");
-                parameters.Add("JudgeIds", judgeIds);
+                parameters.Add("JudgeIds", filter.JudgeIds);
             }
 
-            if (phase.HasValue)
+            if (filter.Phase is not null)
             {
                 conditions.Add("t.phase = @Phase");
-                parameters.Add("Phase", phase.Value.ToString());
+                parameters.Add("Phase", filter.Phase.ToString());
             }
 
             if (conditions.Count > 0)
@@ -335,7 +348,6 @@ namespace TournamentSystem.DataAccess.Repositories
 
             await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
-
         }
 
         public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int disqualifiedBy)
@@ -393,6 +405,7 @@ namespace TournamentSystem.DataAccess.Repositories
             await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, parameters) > 0;
         }
+
         public async Task<Deck?> GetPlayerDeckByTournamentIdAsync(int tournamentId, int playerId)
         {
             return (await GetDecksByTournamentIdAsync(tournamentId, playerId)).FirstOrDefault();
