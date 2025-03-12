@@ -395,5 +395,15 @@ namespace TournamentSystem.Application.Services
 
             return await _tournamentRepository.CancelTournamentAsync(tournamentId);
         }
+
+        public async Task<IEnumerable<GameDto>> GetTournamentGamesAsync(int tournamentId)
+        {
+            var games = await _tournamentRepository.GetTournamentGamesAsync(tournamentId);
+
+            if (games is null)
+                throw new NotFoundException("Games not found");
+
+            return _mapper.Map<List<GameDto>>(games);
+        }
     }
 }

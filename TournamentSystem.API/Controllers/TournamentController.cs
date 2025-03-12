@@ -226,5 +226,17 @@ namespace TournamentSystem.API.Controllers
             return Ok(new { Message = "Tournament successfully canceled." });
         }
 
+
+        [Authorize(Roles = nameof(UserRole.Administrator))]
+        [HttpGet("{tournamentId}/get-all-games")]
+        public async Task<IActionResult> GetAllTournamentGamesAsync(int tournamentId)
+        {
+            var userRole = ClaimsHelper.GetUserRole(User);
+
+            var games = await _tournamentService.GetTournamentGamesAsync(tournamentId);
+
+            return Ok(games);
+        }
+
     }
 }

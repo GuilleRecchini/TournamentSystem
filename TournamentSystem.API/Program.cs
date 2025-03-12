@@ -97,6 +97,8 @@ Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 builder.Services.AddTransient<GlobalExceptionHandler>();
 
 builder.Services.AddAutoMapper(typeof(TournamentMappingProfile));
+builder.Services.AddAutoMapper(typeof(GameMappingProfile));
+
 
 var app = builder.Build();
 

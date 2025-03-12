@@ -25,5 +25,6 @@ namespace TournamentSystem.DataAccess.Repositories
         Task<bool> CancelTournamentAsync(int tournamentId);
         Task<IEnumerable<Deck>> GetTournamentDecksAsync(int tournamentId);
         Task<bool> IsPlayerDisqualifiedAsync(int playerId, int tournamentId);
+        Task<IEnumerable<Game>> GetTournamentGamesAsync(int tournamentId);
     }
 }

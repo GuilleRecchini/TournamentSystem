@@ -555,5 +555,38 @@ namespace TournamentSystem.DataAccess.Repositories
             await using var connection = CreateConnection();
             return await connection.ExecuteScalarAsync<int>(query, new { PlayerId = playerId, TournamentId = tournamentId }) > 0;
         }
+
+        public async Task<IEnumerable<Game>> GetTournamentGamesAsync(int tournamentId)
+        {
+            const string query = @"
+                SELECT g.*, p1.*, p2.*, w.*
+                FROM Games g
+                LEFT JOIN Users p1 ON g.player1_id = p1.user_id
+                LEFT JOIN Users p2 ON g.player2_id = p2.user_id
+                LEFT JOIN Users w ON g.winner_id = w.user_id
+                WHERE tournament_id = @TournamentId;";
+
+            await using var connection = CreateConnection();
+            var gamesDictionary = new Dictionary<int, Game>();
+
+            var games = await connection.QueryAsync<Game, User, User, User, Game>(
+                query,
+                (g, p1, p2, w) =>
+                {
+                    if (!gamesDictionary.TryGetValue(g.GameId, out var gameEntry))
+                    {
+                        gameEntry = g;
+                        gameEntry.Player1 = p1;
+                        gameEntry.Player2 = p2;
+                        gameEntry.Winner = w;
+                        gamesDictionary.Add(gameEntry.GameId, gameEntry);
+                    }
+                    return gameEntry;
+                },
+                new { TournamentId = tournamentId },
+                splitOn: "user_id, user_id, user_id");
+
+            return gamesDictionary.Values;
+        }
     }
 }
