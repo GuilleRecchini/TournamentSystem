@@ -264,7 +264,10 @@ namespace TournamentSystem.Application.Services
             if (!tournament.Players.Exists(p => p.UserId == playerId))
                 throw new ValidationException("The player is not registered for the tournament.");
 
-            //throw new ValidationException("The player is already disqualified from the tournament.");
+            var isPlayerDisqualified = await _tournamentRepository.IsPlayerDisqualifiedAsync(playerId, tournamentId);
+
+            if (isPlayerDisqualified)
+                throw new ValidationException("The player is already disqualified from the tournament.");
 
             return await _tournamentRepository.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
         }

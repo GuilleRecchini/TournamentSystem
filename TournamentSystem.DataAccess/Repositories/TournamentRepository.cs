@@ -316,23 +316,21 @@ namespace TournamentSystem.DataAccess.Repositories
                     (@TournamentId, @StartTime, @Player1Id, @Player2Id)";
 
             await using var connection = CreateConnection();
-            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
             {
-                await using var transaction = await connection.BeginTransactionAsync();
-                try
-                {
-                    await connection.ExecuteAsync(updateTournamentQuery, tournamentParameters, transaction);
+                await connection.ExecuteAsync(updateTournamentQuery, tournamentParameters, transaction);
 
-                    await connection.ExecuteAsync(addGamesQuery, games, transaction);
+                await connection.ExecuteAsync(addGamesQuery, games, transaction);
 
-                    await transaction.CommitAsync();
-                    return true;
-                }
-                catch (Exception)
-                {
-                    transaction.Rollback();
-                    throw;
-                }
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
             }
         }
 
@@ -352,18 +350,40 @@ namespace TournamentSystem.DataAccess.Repositories
 
         public async Task<bool> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason, int disqualifiedBy)
         {
-            const string query = @"
+            const string disqualifyPlayerQuery = @"
                 INSERT INTO disqualifications
                     (user_id, tournament_id, reason, disqualified_by)
                 VALUES
                     (@PlayerId, @TournamentId, @Reason, @DisqualifiedBy);";
 
+            const string getGameQuery = @"
+                    SELECT *
+                    FROM Games
+                    WHERE (player1_id = @PlayerId OR player2_id = @PlayerId) 
+                    AND winner_id IS NULL
+                    AND tournament_id = @TournamentId;";
+
+            const string setWinnerQuery = @"
+                UPDATE Games
+                SET 
+                    winner_id = @WinnerId
+                WHERE game_id = @GameId;";
+
             var parameters = new { PlayerId = playerId, TournamentId = tournamentId, Reason = reason, DisqualifiedBy = disqualifiedBy };
 
             await using var connection = CreateConnection();
-            return await connection.ExecuteAsync(query, parameters) > 0;
 
-            throw new NotImplementedException();
+            var result = await connection.ExecuteAsync(disqualifyPlayerQuery, parameters) > 0;
+
+            var game = await connection.QueryFirstOrDefaultAsync<Game>(getGameQuery, new { PlayerId = playerId, TournamentId = tournamentId });
+
+            if (game is not null)
+            {
+                var winnerId = game.Player1Id == playerId ? game.Player2Id : game.Player1Id;
+                await connection.ExecuteAsync(setWinnerQuery, new { WinnerId = winnerId, game.GameId });
+            }
+
+            return result;
         }
 
         public async Task<bool> AdvanceWinnersToNextRoundAsync(List<Game> games)
@@ -522,6 +542,18 @@ namespace TournamentSystem.DataAccess.Repositories
 
             await using var connection = CreateConnection();
             return await connection.ExecuteAsync(query, new { TournamentId = tournamentId }) > 0;
+        }
+
+        public async Task<bool> IsPlayerDisqualifiedAsync(int playerId, int tournamentId)
+        {
+            const string query = @"
+                SELECT COUNT(*)
+                FROM disqualifications
+                WHERE user_id = @PlayerId
+                AND tournament_id = @TournamentId;";
+
+            await using var connection = CreateConnection();
+            return await connection.ExecuteScalarAsync<int>(query, new { PlayerId = playerId, TournamentId = tournamentId }) > 0;
         }
     }
 }

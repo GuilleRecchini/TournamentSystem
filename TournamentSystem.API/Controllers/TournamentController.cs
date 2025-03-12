@@ -136,11 +136,11 @@ namespace TournamentSystem.API.Controllers
 
         [Authorize(Roles = nameof(UserRole.Judge))]
         [HttpPost("{tournamentId}/disqualify-player/{playerId}")]
-        public async Task<IActionResult> DisqualifyPlayerAsync(int playerId, int tournamentId, string reason)
+        public async Task<IActionResult> DisqualifyPlayerAsync(int playerId, int tournamentId, DisqualifyPlayerRequest request)
         {
             var judgeId = ClaimsHelper.GetUserId(User);
 
-            await _tournamentService.DisqualifyPlayerAsync(playerId, tournamentId, reason, judgeId);
+            await _tournamentService.DisqualifyPlayerAsync(playerId, tournamentId, request.Reason, judgeId);
 
             return Ok(new { Message = "Player successfully disqualified." });
 
