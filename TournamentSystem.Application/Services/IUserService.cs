@@ -1,11 +1,11 @@
 ﻿using TournamentSystem.Application.Dtos;
-using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Enums;
 
 namespace TournamentSystem.Application.Services
 {
     public interface IUserService
     {
-        Task<User> GetUserByIdAsync(int id);
+        Task<BaseUserDto> GetUserByIdAsync(int id, UserRole userRole);
         Task<int> CreateUserAsync(UserRegistrationDto dto);
         Task<bool> UpdateUserAsync(UserUpdateDto dto);
         Task<bool> DeleteUserAsync(int userId);

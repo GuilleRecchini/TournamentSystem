@@ -67,11 +67,11 @@ namespace TournamentSystem.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+
+            var userRol = ClaimsHelper.GetUserRole(User);
+
+            var user = await _userService.GetUserByIdAsync(id, userRol);
+
             return Ok(user);
         }
     }

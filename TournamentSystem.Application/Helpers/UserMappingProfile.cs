@@ -4,11 +4,12 @@ using TournamentSystem.Domain.Entities;
 
 namespace TournamentSystem.Application.Helpers
 {
-    public class GameMappingProfile : Profile
+    public class UserMappingProfile : Profile
     {
-        public GameMappingProfile()
+        public UserMappingProfile()
         {
-            CreateMap<Game, GameDto>();
+            CreateMap<User, BaseUserDto>();
+            CreateMap<User, UserForAdminsDto>();
         }
     }
 }

@@ -1,6 +1,8 @@
-﻿using TournamentSystem.Application.Dtos;
+﻿using AutoMapper;
+using TournamentSystem.Application.Dtos;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
+using TournamentSystem.Domain.Enums;
 using TournamentSystem.Domain.Exceptions;
 using TournamentSystem.Infrastructure.Security;
 
@@ -9,10 +11,12 @@ namespace TournamentSystem.Application.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, IMapper mapper)
         {
             _userRepository = userRepository;
+            _mapper = mapper;
         }
 
         public async Task<int> CreateUserAsync(UserRegistrationDto dto)
@@ -65,9 +69,16 @@ namespace TournamentSystem.Application.Services
             return await _userRepository.DeleteUserAsync(userId);
         }
 
-        public async Task<User> GetUserByIdAsync(int id)
+        public async Task<BaseUserDto> GetUserByIdAsync(int id, UserRole userRole)
         {
-            return await _userRepository.GetUserByIdAsync(id);
+            var user = await _userRepository.GetUserByIdAsync(id);
+
+            if (user is null)
+                throw new NotFoundException("The user does not exist.");
+
+            return userRole == UserRole.Administrator || userRole == UserRole.Organizer
+                ? _mapper.Map<UserForAdminsDto>(user)
+                : _mapper.Map<BaseUserDto>(user);
         }
     }
 }

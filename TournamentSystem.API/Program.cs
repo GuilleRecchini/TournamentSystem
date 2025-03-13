@@ -98,6 +98,7 @@ builder.Services.AddTransient<GlobalExceptionHandler>();
 
 builder.Services.AddAutoMapper(typeof(TournamentMappingProfile));
 builder.Services.AddAutoMapper(typeof(GameMappingProfile));
+builder.Services.AddAutoMapper(typeof(UserMappingProfile));
 
 
 var app = builder.Build();
