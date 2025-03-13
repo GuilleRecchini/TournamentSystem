@@ -186,30 +186,44 @@ namespace TournamentSystem.DataAccess.Repositories
 
         public async Task<bool> UpdateTournamentAsync(Tournament t)
         {
-            const string query = @"
+            const string updateTournamentQuery = @"
                 UPDATE Tournaments 
                 SET 
                     name = @Name,
-                    start_datetime = @StartDatetime,
-                    end_datetime = @EndDateTime,
                     country_code = @CountryCode,
-                    winner = @Winner,
                     organizer_id = @OrganizerId 
                 WHERE tournament_id = @TournamentId;";
 
-            var parameters = new
-            {
-                t.Name,
-                t.StartDateTime,
-                t.EndDateTime,
-                t.CountryCode,
-                t.WinnerId,
-                t.OrganizerId,
-                t.TournamentId
-            };
+            const string updateJudgesQuery = @"        
+                DELETE FROM tournament_judges 
+                WHERE tournament_id = @TournamentId 
+                AND user_id NOT IN @JudgesIds;
+        
+                INSERT INTO tournament_judges (tournament_id, user_id)
+                SELECT @TournamentId, user_id 
+                FROM Users
+                WHERE user_id IN @JudgesIds
+                AND user_id NOT IN (SELECT user_id FROM tournament_judges WHERE tournament_id = @TournamentId);";
 
             await using var connection = CreateConnection();
-            return await connection.ExecuteAsync(query, parameters) > 0;
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                await connection.ExecuteAsync(updateTournamentQuery, new { t.Name, t.CountryCode, t.OrganizerId, t.TournamentId }, transaction);
+
+                await connection.ExecuteAsync(updateJudgesQuery, new { t.TournamentId, JudgesIds = t.Judges.Select(j => j.UserId).ToArray() }, transaction);
+
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<int> AddSeriesToTournamentAsync(int tournamentId, int[] seriesIds)

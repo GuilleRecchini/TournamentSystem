@@ -34,17 +34,7 @@ namespace TournamentSystem.API.Controllers
         [HttpPut("update")]
         public async Task<IActionResult> UpdateTournamentAsync(TournamentUpdateDto TournamentUpdate)
         {
-            var success = await _tournamentService.UpdateTournamentAsync(TournamentUpdate);
-
-            if (!success)
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "Tournament Update Error",
-                    Detail = "The tournament could not be updated."
-                });
-            }
+            await _tournamentService.UpdateTournamentAsync(TournamentUpdate);
 
             return Ok(new { Message = "Tournament successfully updated." });
         }
@@ -75,17 +65,7 @@ namespace TournamentSystem.API.Controllers
         {
             var playerId = ClaimsHelper.GetUserId(User);
 
-            var success = await _tournamentService.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
-
-            if (!success)
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "Registration Error",
-                    Detail = "The player could not be registered for the tournament."
-                });
-            }
+            await _tournamentService.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
 
             return Ok(new { Message = "Player successfully registered for the tournament." });
         }

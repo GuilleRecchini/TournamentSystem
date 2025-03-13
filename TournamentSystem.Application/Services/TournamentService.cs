@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.IdentityModel.Tokens;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.DataAccess.Repositories;
 using TournamentSystem.Domain.Entities;
@@ -68,16 +69,23 @@ namespace TournamentSystem.Application.Services
         {
             var tournament = await _tournamentRepository.GetTournamentByIdAsync(dto.TournamentId, new TournamentsFilter { IsCanceled = false });
 
-
             if (tournament is null)
                 throw new NotFoundException("Tournament not found");
 
             tournament.Name = dto.Name ?? tournament.Name;
-            tournament.StartDateTime = dto.StartDateTime ?? tournament.StartDateTime;
-            tournament.EndDateTime = dto.EndDateTime ?? tournament.EndDateTime;
             tournament.CountryCode = dto.CountryCode ?? tournament.CountryCode;
-            tournament.WinnerId = dto.Winner ?? tournament.WinnerId;
             tournament.OrganizerId = dto.OrganizerId ?? tournament.OrganizerId;
+
+            if (!dto.JudgesIds.IsNullOrEmpty())
+            {
+                var judgesExists = await _userRepository.UsersExistByIdsAndRoleAsync(dto.JudgesIds.ToArray(), UserRole.Judge);
+
+                if (!judgesExists)
+                    throw new NotFoundException("One or more judges do not exist");
+
+                tournament.Judges.Clear();
+                dto.JudgesIds.ForEach(j => tournament.Judges.Add(new User { UserId = j }));
+            }
 
             return await _tournamentRepository.UpdateTournamentAsync(tournament);
         }
@@ -166,6 +174,7 @@ namespace TournamentSystem.Application.Services
                 tournamentId,
                 new TournamentsFilter
                 {
+                    Phase = TournamentPhase.Registration,
                     IsCanceled = false
                 });
 
