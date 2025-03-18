@@ -14,6 +14,10 @@ namespace TournamentSystem.Application.Helpers
 
             CreateMap<Tournament, TournamentPublicDto>()
                 .ForMember(dest => dest.MaxPlayers, opt => opt.MapFrom(src => CalculateMaxPlayers(src)));
+
+            CreateMap<Tournament, BaseTournamentDto>()
+                .ForMember(dest => dest.MaxPlayers, opt => opt.MapFrom(src => CalculateMaxPlayers(src)));
+
         }
     }
 }

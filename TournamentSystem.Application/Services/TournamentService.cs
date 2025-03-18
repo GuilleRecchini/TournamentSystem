@@ -414,5 +414,19 @@ namespace TournamentSystem.Application.Services
 
             return _mapper.Map<List<GameDto>>(games);
         }
+
+        public async Task<IEnumerable<BaseTournamentDto>> GetTournamentsByUserIdAsync(int userId)
+        {
+            var tournaments = await _tournamentRepository.GetTournamentsByUserIdAsync(userId);
+
+            return _mapper.Map<IEnumerable<BaseTournamentDto>>(tournaments);
+        }
+
+        public async Task<IEnumerable<BaseTournamentDto>> GetTournamentsByWinnerAsync(int userId)
+        {
+            var tournaments = await _tournamentRepository.GetTournamentsByWinnerAsync(userId);
+
+            return _mapper.Map<IEnumerable<BaseTournamentDto>>(tournaments);
+        }
     }
 }

@@ -218,5 +218,20 @@ namespace TournamentSystem.API.Controllers
             return Ok(games);
         }
 
+        [Authorize]
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetTournaments(int userId)
+        {
+            var tournaments = await _tournamentService.GetTournamentsByUserIdAsync(userId);
+            return Ok(tournaments);
+        }
+
+        [Authorize]
+        [HttpGet("user/{userId}/won")]
+        public async Task<IActionResult> GetTournamentsByWinner(int userId)
+        {
+            var tournaments = await _tournamentService.GetTournamentsByWinnerAsync(userId);
+            return Ok(tournaments);
+        }
     }
 }

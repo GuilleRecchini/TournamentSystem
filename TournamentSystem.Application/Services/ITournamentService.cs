@@ -22,5 +22,7 @@ namespace TournamentSystem.Application.Services
         Task<bool> CancelTournamentAsync(int tournamentId, int userId, UserRole userRole);
         Task<IEnumerable<DeckDto>> GetTournamentDecksAsyncAsync(int tournamentId);
         Task<IEnumerable<GameDto>> GetTournamentGamesAsync(int tournamentId);
+        Task<IEnumerable<BaseTournamentDto>> GetTournamentsByUserIdAsync(int userId);
+        Task<IEnumerable<BaseTournamentDto>> GetTournamentsByWinnerAsync(int userId);
     }
 }

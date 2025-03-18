@@ -602,5 +602,51 @@ namespace TournamentSystem.DataAccess.Repositories
 
             return gamesDictionary.Values;
         }
+
+        public async Task<IEnumerable<Tournament>> GetTournamentsByUserIdAsync(int userId)
+        {
+            const string userQuery = "SELECT * FROM Users WHERE user_id = @UserId;";
+
+            await using var connection = CreateConnection();
+
+            var user = await connection.QueryFirstOrDefaultAsync<User?>(userQuery, new { UserId = userId });
+
+            if (user is null)
+                return [];
+
+            var tournamentQuery = user.Role switch
+            {
+                UserRole.Organizer => "SELECT * FROM Tournaments WHERE organizer_id = @UserId;",
+                UserRole.Judge => @"
+                    SELECT T.* FROM Tournaments T
+                    JOIN tournament_judges TJ ON T.tournament_id = TJ.tournament_id
+                    WHERE TJ.user_id = @UserId;",
+                UserRole.Player => @"
+                    SELECT * FROM Tournaments T
+                    JOIN tournament_players TP ON T.tournament_id = TP.tournament_id            
+                    WHERE TP.user_id = @UserId;",
+                _ => throw new ArgumentException("Role not recognized")
+            };
+
+            return await connection.QueryAsync<Tournament>(tournamentQuery, new { UserId = userId });
+        }
+
+        public async Task<IEnumerable<Tournament>> GetTournamentsByWinnerAsync(int userId)
+        {
+            const string userQuery = "SELECT * FROM Users WHERE user_id = @UserId;";
+
+            await using var connection = CreateConnection();
+
+            var user = await connection.QueryFirstOrDefaultAsync<User?>(userQuery, new { UserId = userId });
+
+            if (user?.Role is not UserRole.Player)
+                throw new ArgumentException("User is not a player");
+
+            const string tournamentQuery = @"
+                SELECT * FROM Tournaments               
+                WHERE winner_id = @UserId;";
+
+            return await connection.QueryAsync<Tournament>(tournamentQuery, new { UserId = userId });
+        }
     }
 }
