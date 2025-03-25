@@ -62,6 +62,8 @@ namespace TournamentSystem.Application.Services
                 Judges = dto.JudgesIds.Select(j => new User { UserId = j }).ToList()
             };
 
+            tournament.MaxPlayers = CalculateMaxPlayers(tournament);
+
             return await _tournamentRepository.CreateTournamentAsync(tournament);
         }
 
@@ -121,10 +123,7 @@ namespace TournamentSystem.Application.Services
             if (tournament.Players.Exists(p => p.UserId == playerId))
                 throw new ValidationException("The player is already registered for the tournament.");
 
-            var maxPlayers = CalculateMaxPlayers(tournament);
-            var currentPlayers = tournament.Players.Count;
-
-            if (currentPlayers == maxPlayers)
+            if (tournament.Players.Count == tournament.MaxPlayers)
                 throw new ValidationException("The tournament has reached its maximum capacity of players.");
 
             if (cardsIds.Length > 15)
@@ -138,7 +137,7 @@ namespace TournamentSystem.Application.Services
             var player = await _tournamentRepository.RegisterPlayerAsync(tournamentId, playerId, cardsIds);
             tournament.Players.Add(player);
 
-            if (tournament.Players.Count == maxPlayers)
+            if (tournament.Players.Count == tournament.MaxPlayers)
                 await _tournamentRepository.FinalizeRegistrationAndStartTournamentAsync(tournamentId, ScheduleGames(tournament));
 
             return true;

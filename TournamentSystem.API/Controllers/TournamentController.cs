@@ -207,7 +207,7 @@ namespace TournamentSystem.API.Controllers
         }
 
 
-        [Authorize(Roles = nameof(UserRole.Administrator))]
+        [Authorize]
         [HttpGet("{tournamentId}/get-all-games")]
         public async Task<IActionResult> GetAllTournamentGamesAsync(int tournamentId)
         {

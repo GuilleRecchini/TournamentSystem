@@ -15,12 +15,12 @@ namespace TournamentSystem.DataAccess.Repositories
         {
             const string query = @"
                 INSERT INTO Tournaments 
-                    (name, start_datetime, end_datetime, country_code, organizer_id)
+                    (name, start_datetime, end_datetime, country_code, organizer_id, max_players)
                 VALUES 
-                    (@Name, @StartDatetime, @EndDateTime , @CountryCode, @OrganizerId);
+                    (@Name, @StartDatetime, @EndDateTime , @CountryCode, @OrganizerId, @MaxPlayers);
                 SELECT LAST_INSERT_ID();";
 
-            var parameters = new { t.Name, t.StartDateTime, t.EndDateTime, t.CountryCode, t.OrganizerId };
+            var parameters = new { t.Name, t.StartDateTime, t.EndDateTime, t.CountryCode, t.OrganizerId, t.MaxPlayers };
 
             await using var connection = CreateConnection();
             await connection.OpenAsync();

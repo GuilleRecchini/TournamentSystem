@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Domain.Entities;
-using static TournamentSystem.Application.Helpers.TournamentServiceHelpers;
 
 namespace TournamentSystem.Application.Helpers
 {
@@ -9,15 +8,11 @@ namespace TournamentSystem.Application.Helpers
     {
         public TournamentMappingProfile()
         {
-            CreateMap<Tournament, TournamentAdminDto>()
-                .ForMember(dest => dest.MaxPlayers, opt => opt.MapFrom(src => CalculateMaxPlayers(src)));
+            CreateMap<Tournament, TournamentAdminDto>();
 
-            CreateMap<Tournament, TournamentPublicDto>()
-                .ForMember(dest => dest.MaxPlayers, opt => opt.MapFrom(src => CalculateMaxPlayers(src)));
+            CreateMap<Tournament, TournamentPublicDto>();
 
-            CreateMap<Tournament, BaseTournamentDto>()
-                .ForMember(dest => dest.MaxPlayers, opt => opt.MapFrom(src => CalculateMaxPlayers(src)));
-
+            CreateMap<Tournament, BaseTournamentDto>();
         }
     }
 }

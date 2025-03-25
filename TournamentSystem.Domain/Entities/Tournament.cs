@@ -13,6 +13,7 @@ namespace TournamentSystem.Domain.Entities
         public int? WinnerId { get; set; }
         public int? OrganizerId { get; set; }
         public bool IsCanceled { get; set; }
+        public int MaxPlayers { get; set; }
 
         //Navigation properties
         public List<Serie> Series { get; set; }
