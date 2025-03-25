@@ -24,5 +24,7 @@ namespace TournamentSystem.Application.Services
         Task<IEnumerable<GameDto>> GetTournamentGamesAsync(int tournamentId);
         Task<IEnumerable<BaseTournamentDto>> GetTournamentsByUserIdAsync(int userId);
         Task<IEnumerable<BaseTournamentDto>> GetTournamentsByWinnerAsync(int userId);
+        Task<IEnumerable<GameDto>> GetLostGamesByPlayerIdAsync(int playerId);
+        Task<IEnumerable<GameDto>> GetWonGamesByPlayerIdAsync(int playerId);
     }
 }

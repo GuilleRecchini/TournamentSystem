@@ -603,6 +603,68 @@ namespace TournamentSystem.DataAccess.Repositories
             return gamesDictionary.Values;
         }
 
+        public async Task<IEnumerable<Game>> GetTournamentGamesAsync(int? tournamentId = null, int? winnerId = null, int? loserId = null)
+        {
+            var queryBuilder = new StringBuilder(@"
+                SELECT g.*, p1.*, p2.*, w.*
+                FROM Games g
+                LEFT JOIN Users p1 ON g.player1_id = p1.user_id
+                LEFT JOIN Users p2 ON g.player2_id = p2.user_id
+                LEFT JOIN Users w ON g.winner_id = w.user_id");
+
+            var parameters = new DynamicParameters();
+            var conditions = new List<string>();
+
+            if (tournamentId.HasValue)
+            {
+                conditions.Add("g.tournament_id = @TournamentId");
+                parameters.Add("TournamentId", tournamentId.Value);
+            }
+
+            if (winnerId.HasValue)
+            {
+                conditions.Add("g.winner_id = @WinnerId");
+                parameters.Add("WinnerId", winnerId.Value);
+            }
+
+            if (loserId.HasValue)
+            {
+                conditions.Add(@"
+                    (g.player1_id = @LoserId OR g.player2_id = @LoserId)
+                    AND winner_id IS NOT NULL AND winner_id != @LoserId;");
+                parameters.Add("LoserId", loserId.Value);
+            }
+
+            if (conditions.Any())
+            {
+                queryBuilder.Append(" WHERE ");
+                queryBuilder.Append(string.Join(" AND ", conditions));
+            }
+
+            await using var connection = CreateConnection();
+            var gamesDictionary = new Dictionary<int, Game>();
+
+            var games = await connection.QueryAsync<Game, User, User, User, Game>(
+                queryBuilder.ToString(),
+                (g, p1, p2, w) =>
+                {
+                    if (!gamesDictionary.TryGetValue(g.GameId, out var gameEntry))
+                    {
+                        gameEntry = g;
+                        gameEntry.Player1 = p1;
+                        gameEntry.Player2 = p2;
+                        gameEntry.Winner = w;
+                        gamesDictionary.Add(gameEntry.GameId, gameEntry);
+                    }
+                    return gameEntry;
+                },
+                parameters,
+                splitOn: "user_id, user_id, user_id");
+
+            return gamesDictionary.Values;
+        }
+
+
         public async Task<IEnumerable<Tournament>> GetTournamentsByUserIdAsync(int userId)
         {
             const string userQuery = "SELECT * FROM Users WHERE user_id = @UserId;";
@@ -648,5 +710,32 @@ namespace TournamentSystem.DataAccess.Repositories
 
             return await connection.QueryAsync<Tournament>(tournamentQuery, new { UserId = userId });
         }
+
+        ////Funcion para obtener los juegos ganados por un jugador
+        //public async Task<IEnumerable<Game>> GetWonGamesByPlayerIdAsync(int playerId)
+        //{
+        //    const string query = @"
+        //        SELECT * FROM Games g
+        //        LEFT JOIN Tournaments t ON G.tournament_id = t.tournament_id
+        //        LEFT JOIN tournament_players AS tp ON t.tournament_id = tp.tournament_id
+        //        LEFT JOIN users AS p ON tp.user_id = p.user_id
+        //        LEFT JOIN users AS w ON t.winner_id = w.user_id
+        //        WHERE winner_id = @PlayerId;";
+        //    var parameters = new { PlayerId = playerId };
+        //    await using var connection = CreateConnection();
+        //    return await connection.QueryAsync<Game>(query, parameters);
+        //}
+
+        ////Funcion para obtener los juegos perdidos por un jugador
+        //public async Task<IEnumerable<Game>> GetLostGamesByPlayerIdAsync(int playerId)
+        //{
+        //    const string query = @"
+        //        SELECT * FROM Games G
+        //        JOIN Tournaments T ON G.tournament_id = T.tournament_id
+        //        WHERE (player1_id = @PlayerId OR player2_id = @PlayerId) AND winner_id IS NOT NULL AND winner_id != @PlayerId;";
+        //    var parameters = new { PlayerId = playerId };
+        //    await using var connection = CreateConnection();
+        //    return await connection.QueryAsync<Game>(query, parameters);
+        //}
     }
 }

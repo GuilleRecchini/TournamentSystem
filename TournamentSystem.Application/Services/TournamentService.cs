@@ -428,5 +428,19 @@ namespace TournamentSystem.Application.Services
 
             return _mapper.Map<IEnumerable<BaseTournamentDto>>(tournaments);
         }
+
+        public async Task<IEnumerable<GameDto>> GetWonGamesByPlayerIdAsync(int playerId)
+        {
+            var games = await _tournamentRepository.GetTournamentGamesAsync(winnerId: playerId);
+
+            return _mapper.Map<IEnumerable<GameDto>>(games);
+        }
+
+        public async Task<IEnumerable<GameDto>> GetLostGamesByPlayerIdAsync(int playerId)
+        {
+            var games = await _tournamentRepository.GetTournamentGamesAsync(loserId: playerId);
+
+            return _mapper.Map<IEnumerable<GameDto>>(games);
+        }
     }
 }

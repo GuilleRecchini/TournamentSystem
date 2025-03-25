@@ -233,5 +233,17 @@ namespace TournamentSystem.API.Controllers
             var tournaments = await _tournamentService.GetTournamentsByWinnerAsync(userId);
             return Ok(tournaments);
         }
+
+        [Authorize]
+        [HttpGet("users/{userId}/games")]
+        public async Task<IActionResult> GetGamesByPlayerId(int userId, [FromQuery] string result)
+        {
+            if (result == "won")
+                return Ok(await _tournamentService.GetWonGamesByPlayerIdAsync(userId));
+            if (result == "lost")
+                return Ok(await _tournamentService.GetLostGamesByPlayerIdAsync(userId));
+
+            return BadRequest("Invalid result parameter. Use 'won' or 'lost'.");
+        }
     }
 }
