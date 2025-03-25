@@ -12,10 +12,12 @@ namespace TournamentSystem.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IWebHostEnvironment _environment;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IWebHostEnvironment environment)
         {
             _userService = userService;
+            _environment = environment;
         }
 
         [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Organizer)}")]
@@ -52,6 +54,21 @@ namespace TournamentSystem.API.Controllers
             var updated = await _userService.UpdateUserAsync(dto);
 
             return Ok(new { Message = "User successfully updated." });
+        }
+
+        [Authorize]
+        [HttpPost("upload-avatar")]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<IActionResult> UploadAvatar([FromForm] IFormFile avatar)
+        {
+            if (avatar == null || avatar.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var userId = ClaimsHelper.GetUserId(User);
+
+            await _userService.UploadAvatarAsync(userId, avatar);
+
+            return Ok(new { Message = "Avatar updated successfully." });
         }
 
         [Authorize(Roles = nameof(UserRole.Administrator))]

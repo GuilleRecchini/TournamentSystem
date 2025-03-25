@@ -1,4 +1,5 @@
-﻿using TournamentSystem.Application.Dtos;
+﻿using Microsoft.AspNetCore.Http;
+using TournamentSystem.Application.Dtos;
 using TournamentSystem.Domain.Enums;
 
 namespace TournamentSystem.Application.Services
@@ -9,5 +10,6 @@ namespace TournamentSystem.Application.Services
         Task<int> CreateUserAsync(UserRegistrationDto dto);
         Task<bool> UpdateUserAsync(UserUpdateDto dto);
         Task<bool> DeleteUserAsync(int userId);
+        Task<bool> UploadAvatarAsync(int userId, IFormFile avatar);
     }
 }
