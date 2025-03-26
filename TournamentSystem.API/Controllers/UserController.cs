@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Helpers;
-using TournamentSystem.Application.Services;
+using TournamentSystem.Application.Interfaces;
 using TournamentSystem.Domain.Enums;
 
 namespace TournamentSystem.API.Controllers

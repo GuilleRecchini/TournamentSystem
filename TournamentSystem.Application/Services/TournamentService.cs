@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.IdentityModel.Tokens;
 using TournamentSystem.Application.Dtos;
-using TournamentSystem.DataAccess.Repositories;
+using TournamentSystem.Application.Interfaces;
+using TournamentSystem.DataAccess.Interfaces;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Domain.Enums;
 using TournamentSystem.Domain.Exceptions;

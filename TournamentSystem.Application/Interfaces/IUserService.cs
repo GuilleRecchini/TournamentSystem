@@ -2,7 +2,7 @@
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Domain.Enums;
 
-namespace TournamentSystem.Application.Services
+namespace TournamentSystem.Application.Interfaces
 {
     public interface IUserService
     {

@@ -1,6 +1,6 @@
 ﻿using TournamentSystem.Domain.Entities;
 
-namespace TournamentSystem.DataAccess.Repositories
+namespace TournamentSystem.DataAccess.Interfaces
 {
     public interface ICardRepository
     {

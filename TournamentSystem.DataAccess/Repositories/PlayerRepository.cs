@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Options;
+using TournamentSystem.DataAccess.Interfaces;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Infrastructure.Configurations;
 

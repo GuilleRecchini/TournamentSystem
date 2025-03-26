@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TournamentSystem.Application.Services;
+using TournamentSystem.Application.Interfaces;
 
 namespace TournamentSystem.API.Controllers
 {

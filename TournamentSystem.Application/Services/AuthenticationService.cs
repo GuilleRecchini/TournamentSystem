@@ -1,5 +1,6 @@
 ﻿using TournamentSystem.Application.Dtos;
-using TournamentSystem.DataAccess.Repositories;
+using TournamentSystem.Application.Interfaces;
+using TournamentSystem.DataAccess.Interfaces;
 using TournamentSystem.Domain.Exceptions;
 using TournamentSystem.Infrastructure.Security;
 

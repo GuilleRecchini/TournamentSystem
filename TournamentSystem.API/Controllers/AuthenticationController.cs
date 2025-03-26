@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using TournamentSystem.Application.Dtos;
 using TournamentSystem.Application.Helpers;
-using TournamentSystem.Application.Services;
+using TournamentSystem.Application.Interfaces;
 using TournamentSystem.Infrastructure.Configurations;
 
 namespace TournamentSystem.API.Controllers

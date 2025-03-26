@@ -1,6 +1,6 @@
 ﻿using TournamentSystem.Domain.Entities;
 
-namespace TournamentSystem.Application.Services
+namespace TournamentSystem.Application.Interfaces
 {
     public interface ISerieService
     {

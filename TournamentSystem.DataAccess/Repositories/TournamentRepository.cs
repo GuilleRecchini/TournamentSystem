@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using System.Data;
 using System.Text;
 using TournamentSystem.Application.Dtos;
+using TournamentSystem.DataAccess.Interfaces;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Domain.Enums;
 using TournamentSystem.Infrastructure.Configurations;

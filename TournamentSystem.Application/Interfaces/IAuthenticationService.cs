@@ -1,6 +1,6 @@
 ﻿using TournamentSystem.Application.Dtos;
 
-namespace TournamentSystem.Application.Services
+namespace TournamentSystem.Application.Interfaces
 {
     public interface IAuthenticationService
     {

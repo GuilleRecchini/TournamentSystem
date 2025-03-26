@@ -1,7 +1,7 @@
 ﻿using TournamentSystem.Application.Dtos;
 using TournamentSystem.Domain.Entities;
 
-namespace TournamentSystem.DataAccess.Repositories
+namespace TournamentSystem.DataAccess.Interfaces
 {
     public interface ITournamentRepository
     {

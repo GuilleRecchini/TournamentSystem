@@ -2,7 +2,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using TournamentSystem.Application.Dtos;
-using TournamentSystem.DataAccess.Repositories;
+using TournamentSystem.Application.Interfaces;
+using TournamentSystem.DataAccess.Interfaces;
 using TournamentSystem.Domain.Entities;
 using TournamentSystem.Domain.Enums;
 using TournamentSystem.Domain.Exceptions;

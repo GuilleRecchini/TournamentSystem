@@ -1,7 +1,7 @@
 ﻿using TournamentSystem.Domain.Entities;
 using TournamentSystem.Domain.Enums;
 
-namespace TournamentSystem.DataAccess.Repositories
+namespace TournamentSystem.DataAccess.Interfaces
 {
     public interface IUserRepository
     {
