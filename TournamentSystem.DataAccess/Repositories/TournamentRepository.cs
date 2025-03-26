@@ -331,6 +331,7 @@ namespace TournamentSystem.DataAccess.Repositories
                     (@TournamentId, @StartTime, @Player1Id, @Player2Id)";
 
             await using var connection = CreateConnection();
+            await connection.OpenAsync();
             await using var transaction = await connection.BeginTransactionAsync();
 
             try

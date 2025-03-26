@@ -102,6 +102,18 @@ builder.Services.AddAutoMapper(typeof(TournamentMappingProfile));
 builder.Services.AddAutoMapper(typeof(GameMappingProfile));
 builder.Services.AddAutoMapper(typeof(UserMappingProfile));
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var corsOptions = builder.Configuration.GetSection("CORS").Get<CorsOptions>();
+
+        policy.WithOrigins(corsOptions.AllowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -112,6 +124,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors();
 app.UseStaticFiles();
 app.UseMiddleware<GlobalExceptionHandler>();
 app.UseAuthentication();
